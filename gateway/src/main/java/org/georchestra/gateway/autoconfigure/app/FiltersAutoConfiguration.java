@@ -51,7 +51,6 @@ public class FiltersAutoConfiguration {
         return new ResolveTargetGlobalFilter(config);
     }
 
-
     /**
      * Custom gateway predicate factory to support matching by regular expressions
      * on both name and value of query parameters
@@ -68,6 +67,7 @@ public class FiltersAutoConfiguration {
     public @Bean StripBasePathGatewayFilterFactory stripBasePathGatewayFilterFactory() {
         return new StripBasePathGatewayFilterFactory();
     }
+
     @Bean
     RequestIdGlobalFilter requestIdGlobalFilter() {
         return new RequestIdGlobalFilter();

@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -37,12 +36,12 @@ import org.georchestra.ds.users.AccountDao;
 import org.georchestra.ds.users.AccountFactory;
 import org.georchestra.ds.users.DuplicatedEmailException;
 import org.georchestra.ds.users.DuplicatedUidException;
-import org.georchestra.gateway.accounts.admin.AbstractAccountsManager;
-import org.georchestra.gateway.accounts.admin.AccountCreated;
+import org.georchestra.gateway.accounts.admin.AbstractAccountsManager;;
 import org.georchestra.gateway.accounts.admin.AccountManager;
 import org.georchestra.security.api.UsersApi;
 import org.georchestra.security.model.GeorchestraUser;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.ldap.NameNotFoundException;
 
 import lombok.NonNull;
@@ -63,7 +62,7 @@ class LdapAccountsManager extends AbstractAccountsManager {
     private final @NonNull OrgsDao orgsDao;
     private final @NonNull UsersApi usersApi;
 
-    public LdapAccountsManager(Consumer<AccountCreated> eventPublisher, AccountDao accountDao, RoleDao roleDao,
+    public LdapAccountsManager(ApplicationEventPublisher eventPublisher, AccountDao accountDao, RoleDao roleDao,
             OrgsDao orgsDao, UsersApi usersApi) {
         super(eventPublisher);
         this.accountDao = accountDao;

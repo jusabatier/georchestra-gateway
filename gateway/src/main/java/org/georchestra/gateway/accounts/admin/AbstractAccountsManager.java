@@ -27,11 +27,12 @@ import org.georchestra.security.model.GeorchestraUser;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 
 @RequiredArgsConstructor
 public abstract class AbstractAccountsManager implements AccountManager {
 
-    private final @NonNull Consumer<AccountCreated> eventPublisher;
+    private final @NonNull ApplicationEventPublisher eventPublisher;
 
     protected final ReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -64,7 +65,7 @@ public abstract class AbstractAccountsManager implements AccountManager {
                 createInternal(mapped);
                 existing = findInternal(mapped).orElseThrow(() -> new IllegalStateException(
                         "User " + mapped.getUsername() + " not found right after creation"));
-                eventPublisher.accept(new AccountCreated(existing));
+                eventPublisher.publishEvent(new AccountCreated(existing));
             }
             return existing;
 

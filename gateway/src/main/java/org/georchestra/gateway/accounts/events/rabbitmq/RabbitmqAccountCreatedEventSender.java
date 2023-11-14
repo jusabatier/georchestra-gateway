@@ -31,6 +31,7 @@ import org.springframework.context.event.EventListener;
  * distributed event through rabbitmq to the {@literal OAUTH2-ACCOUNT-CREATION}
  * queue.
  */
+
 public class RabbitmqAccountCreatedEventSender {
 
     public static final String OAUTH2_ACCOUNT_CREATION = "OAUTH2-ACCOUNT-CREATION";
@@ -41,7 +42,7 @@ public class RabbitmqAccountCreatedEventSender {
         this.eventTemplate = eventTemplate;
     }
 
-    @EventListener(AccountCreated.class)
+    @EventListener
     public void on(AccountCreated event) {
         GeorchestraUser user = event.getUser();
         final String oAuth2Provider = user.getOAuth2Provider();

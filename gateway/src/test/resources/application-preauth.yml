@@ -55,5 +55,4 @@ spring:
         # georchestra.gateway.default-headers and georchestra.gateway.servies.<service>.headers config properties
         - AddSecHeaders
       httpclient.wiretap: true
-      httpserver.wiretap: false
-
+      httpserver.wiretap: true

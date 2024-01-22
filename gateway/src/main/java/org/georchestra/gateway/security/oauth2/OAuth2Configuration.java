@@ -29,6 +29,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.georchestra.gateway.security.ServerHttpSecurityCustomizer;
 import org.georchestra.gateway.security.ldap.LdapConfigProperties;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -69,6 +70,8 @@ import java.util.stream.Collectors;
 @Slf4j(topic = "org.georchestra.gateway.security.oauth2")
 public class OAuth2Configuration {
 
+    private @Value("${georchestra.gateway.logoutUrl:/?logout}") String georchestraLogoutUrl;
+
     public static final class OAuth2AuthenticationCustomizer implements ServerHttpSecurityCustomizer {
 
         public @Override void customize(ServerHttpSecurity http) {
@@ -99,7 +102,7 @@ public class OAuth2Configuration {
 
         OidcClientInitiatedServerLogoutSuccessHandler oidcLogoutSuccessHandler = new OidcClientInitiatedServerLogoutSuccessHandler(
                 clientRegistrationRepository);
-        oidcLogoutSuccessHandler.setPostLogoutRedirectUri("{baseUrl}/login?logout");
+        oidcLogoutSuccessHandler.setPostLogoutRedirectUri("{baseUrl}" + georchestraLogoutUrl);
         return oidcLogoutSuccessHandler;
     }
 

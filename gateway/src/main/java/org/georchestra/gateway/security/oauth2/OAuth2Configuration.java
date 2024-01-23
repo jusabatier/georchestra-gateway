@@ -19,6 +19,7 @@
 package org.georchestra.gateway.security.oauth2;
 
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.Arrays;
@@ -102,7 +103,8 @@ public class OAuth2Configuration {
 
         OidcClientInitiatedServerLogoutSuccessHandler oidcLogoutSuccessHandler = new OidcClientInitiatedServerLogoutSuccessHandler(
                 clientRegistrationRepository);
-        oidcLogoutSuccessHandler.setPostLogoutRedirectUri("{baseUrl}" + georchestraLogoutUrl);
+        oidcLogoutSuccessHandler.setPostLogoutRedirectUri("{baseUrl}/login?logout");
+        oidcLogoutSuccessHandler.setLogoutSuccessUrl(URI.create("{baseUrl}" + georchestraLogoutUrl));
         return oidcLogoutSuccessHandler;
     }
 

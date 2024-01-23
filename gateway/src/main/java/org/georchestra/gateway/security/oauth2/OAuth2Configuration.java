@@ -104,7 +104,7 @@ public class OAuth2Configuration {
         OidcClientInitiatedServerLogoutSuccessHandler oidcLogoutSuccessHandler = new OidcClientInitiatedServerLogoutSuccessHandler(
                 clientRegistrationRepository);
         oidcLogoutSuccessHandler.setPostLogoutRedirectUri("{baseUrl}/login?logout");
-        oidcLogoutSuccessHandler.setLogoutSuccessUrl(URI.create("{baseUrl}" + georchestraLogoutUrl));
+        oidcLogoutSuccessHandler.setLogoutSuccessUrl(URI.create(georchestraLogoutUrl));
         return oidcLogoutSuccessHandler;
     }
 

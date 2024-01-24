@@ -50,6 +50,16 @@ jobs:
       if: github.ref != 'refs/heads/main' && github.repository == 'georchestra/georchestra-gateway'
       run: docker push georchestra/gateway:${{ steps.version.outputs.VERSION }}
 
+    - name: "Update Gateway Docker Hub Description"
+      if: github.ref == 'refs/heads/main' && github.repository == 'georchestra/georchestra-gateway' && github.actor != 'dependabot[bot]' && github.event_name != 'pull_request'
+      uses: peter-evans/dockerhub-description@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+        repository: georchestra/gateway
+        readme-filepath: ./DOCKER_HUB.md
+        short-description: 'Gateway module for geOrchestra SDI'
+
     - name: "Push image attached to commit id to docker.io"
       if: github.ref == 'refs/heads/main' && github.repository == 'georchestra/georchestra-gateway'
       run: |

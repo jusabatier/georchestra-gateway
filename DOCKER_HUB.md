@@ -43,6 +43,12 @@ This image is build using maven : `./mvnw package -f gateway/ -Pdocker` in repo 
 
 Make can also be used : `make docker`.
 
+## Running tests
+
+Tests are run using maven : `./mvnw verify -pl :georchestra-gateway -ntp` in repo folder.
+
+Make can also be used : `make test`.
+
 # License
 
 View [license information](https://www.georchestra.org/software.html) for the software contained in this image.

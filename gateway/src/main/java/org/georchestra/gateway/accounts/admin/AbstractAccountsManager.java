@@ -41,7 +41,7 @@ public abstract class AbstractAccountsManager implements AccountManager {
         return find(mappedUser).orElseGet(() -> createIfMissing(mappedUser));
     }
 
-    protected Optional<GeorchestraUser> find(GeorchestraUser mappedUser) {
+    public Optional<GeorchestraUser> find(GeorchestraUser mappedUser) {
         lock.readLock().lock();
         try {
             return findInternal(mappedUser);

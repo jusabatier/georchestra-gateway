@@ -19,6 +19,8 @@
 package org.georchestra.gateway.accounts.admin;
 
 import java.util.Objects;
+import java.util.Optional;
+import java.util.WeakHashMap;
 
 import org.georchestra.gateway.security.GeorchestraUserCustomizerExtension;
 import org.georchestra.security.model.GeorchestraUser;
@@ -39,6 +41,8 @@ import lombok.RequiredArgsConstructor;
 public class CreateAccountUserCustomizer implements GeorchestraUserCustomizerExtension, Ordered {
 
     private final @NonNull AccountManager accounts;
+
+    private final WeakHashMap<Authentication, GeorchestraUser> loggedInUsers = new WeakHashMap<>();
 
     /**
      * @return {@link Ordered#LOWEST_PRECEDENCE} so it runs after all other
@@ -68,7 +72,17 @@ public class CreateAccountUserCustomizer implements GeorchestraUserCustomizerExt
             Objects.requireNonNull(mappedUser.getUsername(), "GeorchestraUser.username is null");
         }
         if (isOauth2 || isPreAuth) {
-            return accounts.getOrCreate(mappedUser);
+            GeorchestraUser user = loggedInUsers.get(auth);
+            if (user != null) {
+                Optional<GeorchestraUser> ldapUser = accounts.find(mappedUser);
+                if (ldapUser.isPresent()) {
+                    user = ldapUser.get();
+                }
+            } else {
+                user = accounts.getOrCreate(mappedUser);
+            }
+            loggedInUsers.put(auth, user);
+            return user;
         }
         return mappedUser;
     }

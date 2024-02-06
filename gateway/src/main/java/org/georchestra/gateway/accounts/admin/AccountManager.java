@@ -24,11 +24,23 @@ import org.georchestra.security.model.GeorchestraUser;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
 
+import java.util.Optional;
+
 /**
  * @see CreateAccountUserCustomizer
  * @see ResolveGeorchestraUserGlobalFilter
  */
 public interface AccountManager {
+
+    /**
+     * Finds the stored user that belongs to the {@code mappedUser} if it exists
+     *
+     * @param mappedUser the user {@link ResolveGeorchestraUserGlobalFilter}
+     *                   resolved by calling
+     *                   {@link GeorchestraUserMapper#resolve(Authentication)}
+     * @return the stored version of the user if it exists, otherwise an empty Optional
+     */
+    Optional<GeorchestraUser> find(GeorchestraUser mappedUser);
 
     /**
      * Finds the stored user that belongs to the {@code mappedUser} or creates it if

@@ -58,7 +58,7 @@ jobs:
         password: ${{ secrets.DOCKER_HUB_PASSWORD }}
         repository: georchestra/gateway
         readme-filepath: ./DOCKER_HUB.md
-        short-description: 'Gateway module for geOrchestra SDI'
+        short-description: 'Gateway module for the geOrchestra SDI'
 
     - name: "Push image attached to commit id to docker.io"
       if: github.ref == 'refs/heads/main' && github.repository == 'georchestra/georchestra-gateway'

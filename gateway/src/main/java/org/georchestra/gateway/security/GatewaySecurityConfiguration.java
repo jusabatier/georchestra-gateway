@@ -85,6 +85,9 @@ public class GatewaySecurityConfiguration {
         // by proxified webapps, not the gateway.
         http.csrf().disable();
 
+        // custom handling for forbidden error
+        http.exceptionHandling().accessDeniedHandler(new CustomAccessDeniedHandler());
+
         sortedCustomizers(customizers).forEach(customizer -> {
             log.debug("Applying security customizer {}", customizer.getName());
             customizer.customize(http);

@@ -65,8 +65,8 @@ public class GeorchestraUserHeadersContributor extends HeaderContributor {
                         add(headers, SEC_LDAP_REMAINING_DAYS, Optional
                                 .of(user.isPresent() && user.get().getLdapWarn() != null && user.get().getLdapWarn()),
                                 user.map(GeorchestraUser::getLdapRemainingDays));
-                        add(headers, SEC_EXTERNAL_AUTHENTICATION,
-                                Optional.of(user.isPresent() && user.get().getIsExternalAuth()), Optional.of("true"));
+                        add(headers, SEC_EXTERNAL_AUTHENTICATION, Optional.of(true),
+                                String.valueOf(user.isPresent() && user.get().getIsExternalAuth()));
                     });
         };
     }

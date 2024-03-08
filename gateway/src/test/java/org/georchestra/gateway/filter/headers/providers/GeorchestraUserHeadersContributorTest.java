@@ -23,12 +23,14 @@ import static org.georchestra.commons.security.SecurityHeaders.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -86,7 +88,10 @@ class GeorchestraUserHeadersContributorTest {
 
         HttpHeaders target = new HttpHeaders();
         contributor.accept(target);
-        assertTrue(target.isEmpty());
+        assertFalse(target.isEmpty());
+        Objects.requireNonNull(target.get(SEC_EXTERNAL_AUTHENTICATION));
+        assertEquals(List.of("false"), target.get(SEC_EXTERNAL_AUTHENTICATION));
+        assertEquals(1, target.size());
     }
 
     @Test

@@ -27,9 +27,10 @@ import java.util.Optional;
 
 import javax.annotation.PostConstruct;
 
+import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties;
+import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties.Server;
 import org.georchestra.gateway.security.GeorchestraUserMapper;
 import org.georchestra.gateway.security.exceptions.DuplicatedEmailFoundException;
-import org.georchestra.gateway.security.ldap.LdapConfigProperties;
 import org.georchestra.security.model.GeorchestraUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,27 +46,27 @@ import org.springframework.context.event.EventListener;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.core.env.Environment;
 import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
-@Controller
+@RestController
 @Slf4j
 @SpringBootApplication
-@EnableConfigurationProperties(LdapConfigProperties.class)
+@EnableConfigurationProperties(GeorchestraGatewaySecurityConfigProperties.class)
 public class GeorchestraGatewayApplication {
 
     private @Autowired RouteLocator routeLocator;
     private @Autowired GeorchestraUserMapper userMapper;
 
-    private @Autowired(required = false) LdapConfigProperties ldapConfigProperties;
+    private @Autowired(required = false) GeorchestraGatewaySecurityConfigProperties georchestraGatewaySecurityConfigProperties;
 
     private boolean ldapEnabled = false;
 
@@ -80,18 +81,20 @@ public class GeorchestraGatewayApplication {
 
     @PostConstruct
     void initialize() {
-        if (ldapConfigProperties != null) {
-            ldapEnabled = ldapConfigProperties.getLdap().values().stream().anyMatch((server -> server.isEnabled()));
+        if (georchestraGatewaySecurityConfigProperties != null) {
+            ldapEnabled = georchestraGatewaySecurityConfigProperties.getLdap().values().stream()
+                    .anyMatch((Server::isEnabled));
         }
     }
 
     @GetMapping(path = "/whoami", produces = "application/json")
     @ResponseBody
     public Mono<Map<String, Object>> whoami(Authentication principal, ServerWebExchange exchange) {
-        GeorchestraUser user = null;
+        GeorchestraUser user;
         try {
             user = Optional.ofNullable(principal).flatMap(userMapper::resolve).orElse(null);
         } catch (DuplicatedEmailFoundException e) {
+            user = null;
         }
 
         Map<String, Object> ret = new LinkedHashMap<>();
@@ -112,7 +115,7 @@ public class GeorchestraGatewayApplication {
 
     @GetMapping(path = "/login")
     public String loginPage(@RequestParam Map<String, String> allRequestParams, Model mdl) {
-        Map<String, String> oauth2LoginLinks = new HashMap<String, String>();
+        Map<String, String> oauth2LoginLinks = new HashMap<>();
         if (oauth2ClientConfig != null) {
             oauth2ClientConfig.getRegistration().forEach((k, v) -> {
                 String clientName = Optional.ofNullable(v.getClientName()).orElse(k);
@@ -158,6 +161,10 @@ public class GeorchestraGatewayApplication {
                 routeCount, instanceId, cpus, maxMem);
     }
 
+    /**
+     * REVISIT: why do we need to define this bean in the Application class and not
+     * in a configuration that depends on whether rabbit is enabled?
+     */
     @Bean
     public MessageSource messageSource() {
         ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();

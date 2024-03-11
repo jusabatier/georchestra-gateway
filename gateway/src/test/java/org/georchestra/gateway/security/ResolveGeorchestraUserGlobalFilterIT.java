@@ -21,6 +21,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -51,7 +52,7 @@ public class ResolveGeorchestraUserGlobalFilterIT {
     };
 
     public static @BeforeAll void startUpContainers() {
-        httpEcho.setExposedPorts(Arrays.asList(new Integer[] { 80 }));
+        httpEcho.setExposedPorts(List.of(80));
         httpEcho.start();
         ldap.start();
     }
@@ -102,7 +103,16 @@ public class ResolveGeorchestraUserGlobalFilterIT {
                 .expectBody()//
                 .jsonPath(".request.headers.sec-user").doesNotHaveJsonPath()//
                 .jsonPath(".request.headers.sec-organization").exists();
+    }
 
+    public @Test void testSecOrgnamePresent() {
+        testClient.get().uri("/echo/")//
+                .header("Authorization", "Basic dGVzdGFkbWluOnRlc3RhZG1pbg==") // testadmin:testadmin
+                .exchange()//
+                .expectStatus()//
+                .is2xxSuccessful()//
+                .expectBody()//
+                .jsonPath(".request.headers.sec-orgname").exists();
     }
 
     /**

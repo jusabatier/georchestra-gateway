@@ -49,7 +49,7 @@ import lombok.RequiredArgsConstructor;
  * {@literal username}.
  */
 @RequiredArgsConstructor
-class DemultiplexingUsersApi {
+public class DemultiplexingUsersApi {
 
     private final @NonNull Map<String, UsersApi> usersByConfigName;
     private final @NonNull Map<String, OrganizationsApi> orgsByConfigName;
@@ -59,12 +59,12 @@ class DemultiplexingUsersApi {
     }
 
     /**
-     * 
+     *
      * @param serviceName the configured LDAP service name, as from the
      *                    configuration properties
      *                    {@code georchestra.gateway.security.<serviceName>}
      * @param username    the user name to query the service's {@link UsersApi} with
-     * 
+     *
      * @return the {@link GeorchestraUser} returned by the service's
      *         {@link UsersApi}, or {@link Optional#empty() empty} if not found
      */
@@ -72,6 +72,28 @@ class DemultiplexingUsersApi {
         UsersApi usersApi = usersByConfigName.get(serviceName);
         Objects.requireNonNull(usersApi, () -> "No UsersApi found for config named " + serviceName);
         Optional<GeorchestraUser> user = usersApi.findByUsername(username);
+
+        return extend(serviceName, user);
+    }
+
+    public Optional<ExtendedGeorchestraUser> findByUsername(@NonNull String username) {
+        // TODO: iterates over every possible geOrchestra LDAP being registered ?
+        // I would expect to have generally only one geOrchestra (extended) LDAP
+        // configured,
+        // so the first extended LDAP should do.
+        String serviceName = usersByConfigName.keySet().stream().findFirst().get();
+        UsersApi usersApi = usersByConfigName.get(serviceName);
+        Optional<GeorchestraUser> user = usersApi.findByUsername(username);
+
+        return extend(serviceName, user);
+    }
+
+    public Optional<ExtendedGeorchestraUser> findByOAuth2Uid(@NonNull String oauth2Provider,
+            @NonNull String oauth2Uid) {
+        String serviceName = usersByConfigName.keySet().stream().findFirst().get();
+        UsersApi usersApi = usersByConfigName.get(serviceName);
+        Objects.requireNonNull(usersApi, () -> "No UsersApi found for config named " + serviceName);
+        Optional<GeorchestraUser> user = usersApi.findByOAuth2Uid(oauth2Provider, oauth2Uid);
 
         return extend(serviceName, user);
     }

@@ -4,7 +4,7 @@ georchestra:
       oauth2:
         enabled: true
       ldap:
-        openldap:
+        default:
           enabled: true
           extended: true
           url: ldap://ldap:389

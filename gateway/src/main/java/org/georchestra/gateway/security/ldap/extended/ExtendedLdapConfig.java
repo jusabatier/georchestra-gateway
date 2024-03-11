@@ -22,6 +22,7 @@ package org.georchestra.gateway.security.ldap.extended;
 import java.util.Optional;
 
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Generated;
 import lombok.NonNull;
 import lombok.Value;
@@ -42,8 +43,10 @@ public class ExtendedLdapConfig {
     // null = all atts, empty == none
     private String[] returningAttributes;
 
-    private @NonNull Optional<String> adminDn;
-    private @NonNull Optional<String> adminPassword;
+    @Default
+    private @NonNull Optional<String> adminDn = Optional.empty();
+    @Default
+    private @NonNull Optional<String> adminPassword = Optional.empty();
 
     private @NonNull String orgsRdn;
     private @NonNull String pendingOrgsRdn;

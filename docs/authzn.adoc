@@ -276,3 +276,24 @@ sec-roles: ROLE_ORG_6007280321;ROLE_GDI_PLANER;ROLE_GDI_EDITOR;ROLE_USER
 sec-org: 6007280321
 ```
 
+== Automatically creating users in a geOrchestra LDAP
+
+As in the <<pre-authentication.adoc#,pre-authentication method>>, it is possible
+to create externally authenticated users into a geOrchestra (extended) LDAP, so
+that an administrator can promote the user to a higher role than `USER` by default.
+
+In order to do so, you will need to set the following property, and make sure
+an `extended` LDAP named `default` is defined, as in the following configuration
+snippet:
+
+```
+georchestra:
+  gateway:
+    security:
+      create-non-existing-users-in-l-d-a-p: true
+      ldap:
+        default:
+          enabled: true
+          extended: true
+          [...]
+```

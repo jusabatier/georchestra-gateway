@@ -1,10 +1,8 @@
-package org.georchestra.gateway.accounts.admin;
+package org.georchestra.gateway.security.ldap.extended;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import org.georchestra.ds.users.Account;
-import org.georchestra.ds.users.AccountDao;
 import org.georchestra.gateway.app.GeorchestraGatewayApplication;
+import org.georchestra.gateway.filter.headers.providers.JsonPayloadHeadersContributor;
+import org.georchestra.gateway.model.GatewayConfigProperties;
 import org.georchestra.testcontainers.ldap.GeorchestraLdapContainer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -12,21 +10,27 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.context.WebApplicationContext;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.utility.DockerImageName;
+
+import java.util.Arrays;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(classes = GeorchestraGatewayApplication.class)
+@ActiveProfiles({ "createaccount" })
 @AutoConfigureWebTestClient(timeout = "PT20S")
-@ActiveProfiles({ "createaccount", "preauthbase64encoded" })
-class PreauthHttpHeadersBase64EncodedCreateAccountIT {
+public class ExtendedLdapAuthenticationIT {
+    public static GeorchestraLdapContainer ldap = new GeorchestraLdapContainer();
 
     private @Autowired WebTestClient testClient;
-
-    private @Autowired AccountDao accountDao;
-
-    public static GeorchestraLdapContainer ldap = new GeorchestraLdapContainer();
 
     public static @BeforeAll void startUpContainers() {
         ldap.start();
@@ -42,26 +46,26 @@ class PreauthHttpHeadersBase64EncodedCreateAccountIT {
         registry.add("testcontainers.georchestra.ldap.port", ldap::getMappedLdapPort);
     }
 
-    @Test
-    void testPreauthenticatedHeaders_AccentedChars() throws Exception {
+    public @Test void testWhoami() {
         testClient.get().uri("/whoami")//
-                .header("sec-georchestra-preauthenticated", "true")//
-                .header("preauth-username", "{base64}ZnZhbmRlcmJsYWg=")//
-                .header("preauth-email", "{base64}ZnZhbmRlcmJsYWhAZ2VvcmNoZXN0cmEub3Jn")//
-                .header("preauth-firstname", "{base64}RnJhbsOnb2lz")//
-                .header("preauth-lastname", "{base64}VmFuIERlciBBY2NlbnTDqWQgQ2jDoHJhY3TDqHJz")//
-                .header("preauth-org", "{base64}R0VPUkNIRVNUUkE=")//
+                .header("Authorization", "Basic dGVzdGFkbWluOnRlc3RhZG1pbg==") // testadmin:testadmin
                 .exchange()//
                 .expectStatus()//
                 .is2xxSuccessful()//
                 .expectBody()//
-                .jsonPath("$.GeorchestraUser").isNotEmpty();
-
-        // Make sure the account has been created and the strings have been correctly
-        // evaluated at creation
-        Account created = accountDao.findByUID("fvanderblah");
-
-        assertThat(created.getSurname()).isEqualTo("Van Der Accentéd Chàractèrs");
-        assertThat(created.getGivenName()).isEqualTo("François");
+                .jsonPath("$.GeorchestraUser.username").isEqualTo("testadmin");
     }
+
+    public @Test void testWhoamiNoPasswordRevealed() {
+        testClient.get().uri("/whoami")//
+                .header("Authorization", "Basic dGVzdGFkbWluOnRlc3RhZG1pbg==") // testadmin:testadmin
+                .exchange()//
+                .expectStatus()//
+                .is2xxSuccessful()//
+                .expectBody()//
+                .jsonPath(
+                        "$.['org.georchestra.gateway.security.ldap.extended.GeorchestraUserNamePasswordAuthenticationToken'].principal.password")
+                .isEmpty();
+    }
+
 }

@@ -56,6 +56,16 @@ public class ExtendedLdapAuthenticationIT {
                 .jsonPath("$.GeorchestraUser.username").isEqualTo("testadmin");
     }
 
+    public @Test void testWhoamiUsingEmail() {
+        testClient.get().uri("/whoami")//
+                .header("Authorization", "Basic cHNjK3Rlc3RhZG1pbkBnZW9yY2hlc3RyYS5vcmc6dGVzdGFkbWlu") // psc+testadmin@georchestra.org:testadmin
+                .exchange()//
+                .expectStatus()//
+                .is2xxSuccessful()//
+                .expectBody()//
+                .jsonPath("$.GeorchestraUser.username").isEqualTo("testadmin");
+    }
+
     public @Test void testWhoamiNoPasswordRevealed() {
         testClient.get().uri("/whoami")//
                 .header("Authorization", "Basic dGVzdGFkbWluOnRlc3RhZG1pbg==") // testadmin:testadmin

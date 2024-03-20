@@ -362,9 +362,6 @@
     </profile>
     <profile>
       <id>debianPackage</id>
-      <properties>
-        <maven.build.timestamp.format>yyyyMMddHHmm</maven.build.timestamp.format>
-      </properties>
       <build>
         <finalName>${project.artifactId}</finalName>
         <plugins>
@@ -398,7 +395,9 @@
               <execution>
                 <id>copy-deb-resources</id>
                 <phase>process-resources</phase>
-                <goals><goal>copy-resources</goal></goals>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
                 <configuration>
                   <overwrite>true</overwrite>
                   <outputDirectory>${project.build.directory}/deb</outputDirectory>
@@ -425,10 +424,8 @@
                 <configuration>
                   <exportAntProperties>true</exportAntProperties>
                   <target>
-                    <condition property="project.packageVersion"
-                               value="${build.closest.tag.name}.${maven.build.timestamp}~${build.commit.id.abbrev}"
-                               else="99.main.${maven.build.timestamp}~${build.commit.id.abbrev}">
-                      <matches string="${build.branch}" pattern="\d{2}\.\d\.x$" />
+                    <condition else="99.main.${maven.build.timestamp}~${build.commit.id.abbrev}" property="project.packageVersion" value="${build.closest.tag.name}.${maven.build.timestamp}~${build.commit.id.abbrev}">
+                      <matches pattern="\d{2}\.\d\.x$" string="${build.branch}"></matches>
                     </condition>
                   </target>
                 </configuration>
@@ -451,6 +448,9 @@
           </plugin>
         </plugins>
       </build>
+      <properties>
+        <maven.build.timestamp.format>yyyyMMddHHmm</maven.build.timestamp.format>
+      </properties>
     </profile>
   </profiles>
 </project>

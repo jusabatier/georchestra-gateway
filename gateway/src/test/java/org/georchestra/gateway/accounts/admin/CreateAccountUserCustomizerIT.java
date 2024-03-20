@@ -147,9 +147,10 @@ public class CreateAccountUserCustomizerIT {
                 .is2xxSuccessful()//
                 .expectBody()//
                 .jsonPath("$.GeorchestraUser").isNotEmpty()//
-                .jsonPath("$.GeorchestraUser.roles").value(Matchers.contains("ROLE_ADMINISTRATOR", //
+                .jsonPath("$.GeorchestraUser.roles").value(Matchers.hasItems("ROLE_ADMINISTRATOR", //
                         "ROLE_SUPERUSER", //
                         "ROLE_GN_ADMIN", //
+                        "ROLE_IMPORT", //
                         "ROLE_USER", //
                         "ROLE_MAPSTORE_ADMIN", //
                         "ROLE_EMAILPROXY"));

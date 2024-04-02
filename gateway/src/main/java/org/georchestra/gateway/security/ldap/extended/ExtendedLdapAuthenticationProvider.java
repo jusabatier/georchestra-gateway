@@ -58,7 +58,7 @@ public class ExtendedLdapAuthenticationProvider extends LdapAuthenticationProvid
         }
         Assert.notNull(password, "Null password was supplied in authentication token");
         DirContextOperations userData = doAuthentication(userToken);
-        UserDetails user = this.userDetailsContextMapper.mapUserFromContext(userData, authentication.getName(),
+        UserDetails user = this.userDetailsContextMapper.mapUserFromContext(userData, username,
                 loadUserAuthorities(userData, authentication.getName(), (String) authentication.getCredentials()));
 
         return createSuccessfulAuthentication(userToken, user);

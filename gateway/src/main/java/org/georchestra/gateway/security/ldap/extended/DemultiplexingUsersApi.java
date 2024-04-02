@@ -76,13 +76,6 @@ class DemultiplexingUsersApi {
         return extend(serviceName, user);
     }
 
-    public Optional<ExtendedGeorchestraUser> findByEmail(@NonNull String serviceName, @NonNull String email) {
-        UsersApi usersApi = usersByConfigName.get(serviceName);
-        Objects.requireNonNull(usersApi, () -> "No UsersApi found for config named " + serviceName);
-        Optional<GeorchestraUser> user = usersApi.findByEmail(email);
-        return extend(serviceName, user);
-    }
-
     private Optional<ExtendedGeorchestraUser> extend(String serviceName, Optional<GeorchestraUser> user) {
         OrganizationsApi orgsApi = orgsByConfigName.get(serviceName);
         Objects.requireNonNull(orgsApi, () -> "No OrganizationsApi found for config named " + serviceName);

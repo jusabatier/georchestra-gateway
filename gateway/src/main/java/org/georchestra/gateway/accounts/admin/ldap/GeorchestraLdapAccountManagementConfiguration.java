@@ -20,24 +20,18 @@ package org.georchestra.gateway.accounts.admin.ldap;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.Collections;
-import java.util.List;
-
 import org.georchestra.ds.orgs.OrgsDao;
 import org.georchestra.ds.orgs.OrgsDaoImpl;
 import org.georchestra.ds.roles.RoleDao;
 import org.georchestra.ds.roles.RoleDaoImpl;
 import org.georchestra.ds.roles.RoleProtected;
-import org.georchestra.ds.security.UserMapperImpl;
-import org.georchestra.ds.security.UsersApiImpl;
 import org.georchestra.ds.users.AccountDao;
 import org.georchestra.ds.users.AccountDaoImpl;
-import org.georchestra.ds.users.UserRule;
 import org.georchestra.gateway.accounts.admin.AccountManager;
 import org.georchestra.gateway.accounts.admin.CreateAccountUserCustomizer;
-import org.georchestra.gateway.security.ldap.LdapConfigProperties;
+import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties;
+import org.georchestra.gateway.security.ldap.extended.DemultiplexingUsersApi;
 import org.georchestra.gateway.security.ldap.extended.ExtendedLdapConfig;
-import org.georchestra.security.api.UsersApi;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -48,16 +42,20 @@ import org.springframework.ldap.pool.factory.PoolingContextSource;
 import org.springframework.ldap.pool.validation.DefaultDirContextValidator;
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(LdapConfigProperties.class)
+@EnableConfigurationProperties(GeorchestraGatewaySecurityConfigProperties.class)
 public class GeorchestraLdapAccountManagementConfiguration {
 
     @Bean
     AccountManager ldapAccountsManager(//
             ApplicationEventPublisher eventPublisher, //
-            AccountDao accountDao, RoleDao roleDao, OrgsDao orgsDao) {
+            AccountDao accountDao, //
+            RoleDao roleDao, //
+            OrgsDao orgsDao, //
+            DemultiplexingUsersApi demultiplexingUsersApi,
+            GeorchestraGatewaySecurityConfigProperties configProperties) {
 
-        UsersApi usersApi = ldapUsersApi(accountDao, roleDao);
-        return new LdapAccountsManager(eventPublisher::publishEvent, accountDao, roleDao, orgsDao, usersApi);
+        return new LdapAccountsManager(eventPublisher::publishEvent, accountDao, roleDao, orgsDao,
+                demultiplexingUsersApi, configProperties);
     }
 
     @Bean
@@ -65,27 +63,14 @@ public class GeorchestraLdapAccountManagementConfiguration {
         return new CreateAccountUserCustomizer(accountManager);
     }
 
-    private UsersApi ldapUsersApi(AccountDao accountDao, RoleDao roleDao) {
-        UserMapperImpl mapper = new UserMapperImpl();
-        mapper.setRoleDao(roleDao);
-        List<String> protectedUsers = Collections.emptyList();
-        UserRule rule = new UserRule();
-        rule.setListOfprotectedUsers(protectedUsers.toArray(String[]::new));
-        UsersApiImpl usersApi = new UsersApiImpl();
-        usersApi.setAccountsDao(accountDao);
-        usersApi.setMapper(mapper);
-        usersApi.setUserRule(rule);
-        return usersApi;
-    }
-
     @Bean
-    LdapContextSource singleContextSource(LdapConfigProperties config) {
+    LdapContextSource singleContextSource(GeorchestraGatewaySecurityConfigProperties config) {
         ExtendedLdapConfig ldapConfig = config.extendedEnabled().get(0);
         LdapContextSource singleContextSource = new LdapContextSource();
         singleContextSource.setUrl(ldapConfig.getUrl());
         singleContextSource.setBase(ldapConfig.getBaseDn());
-        singleContextSource.setUserDn(ldapConfig.getAdminDn().get());
-        singleContextSource.setPassword(ldapConfig.getAdminPassword().get());
+        singleContextSource.setUserDn(ldapConfig.getAdminDn().orElseThrow());
+        singleContextSource.setPassword(ldapConfig.getAdminPassword().orElseThrow());
         return singleContextSource;
     }
 
@@ -105,12 +90,11 @@ public class GeorchestraLdapAccountManagementConfiguration {
 
     @Bean
     LdapTemplate ldapTemplate(PoolingContextSource contextSource) throws Exception {
-        LdapTemplate ldapTemplate = new LdapTemplate(contextSource);
-        return ldapTemplate;
+        return new LdapTemplate(contextSource);
     }
 
     @Bean
-    RoleDao roleDao(LdapTemplate ldapTemplate, LdapConfigProperties config) {
+    RoleDao roleDao(LdapTemplate ldapTemplate, GeorchestraGatewaySecurityConfigProperties config) {
         RoleDaoImpl impl = new RoleDaoImpl();
         impl.setLdapTemplate(ldapTemplate);
         impl.setRoleSearchBaseDN(config.extendedEnabled().get(0).getRolesRdn());
@@ -118,7 +102,7 @@ public class GeorchestraLdapAccountManagementConfiguration {
     }
 
     @Bean
-    OrgsDao orgsDao(LdapTemplate ldapTemplate, LdapConfigProperties config) {
+    OrgsDao orgsDao(LdapTemplate ldapTemplate, GeorchestraGatewaySecurityConfigProperties config) {
         OrgsDaoImpl impl = new OrgsDaoImpl();
         impl.setLdapTemplate(ldapTemplate);
         ExtendedLdapConfig ldapConfig = config.extendedEnabled().get(0);
@@ -129,7 +113,7 @@ public class GeorchestraLdapAccountManagementConfiguration {
     }
 
     @Bean
-    AccountDao accountDao(LdapTemplate ldapTemplate, LdapConfigProperties config) throws Exception {
+    AccountDao accountDao(LdapTemplate ldapTemplate, GeorchestraGatewaySecurityConfigProperties config) {
         ExtendedLdapConfig ldapConfig = config.extendedEnabled().get(0);
         String baseDn = ldapConfig.getBaseDn();
         String userSearchBaseDN = ldapConfig.getUsersRdn();
@@ -144,9 +128,7 @@ public class GeorchestraLdapAccountManagementConfiguration {
         impl.setBasePath(baseDn);
         impl.setUserSearchBaseDN(userSearchBaseDN);
         impl.setRoleSearchBaseDN(roleSearchBaseDN);
-        if (pendingUsersSearchBaseDN != null) {
-            impl.setPendingUserSearchBaseDN(pendingUsersSearchBaseDN);
-        }
+        impl.setPendingUserSearchBaseDN(pendingUsersSearchBaseDN);
 
         String orgSearchBaseDN = ldapConfig.getOrgsRdn();
         requireNonNull(orgSearchBaseDN);

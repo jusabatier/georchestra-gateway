@@ -18,9 +18,18 @@
  */
 package org.georchestra.gateway.autoconfigure.accounts;
 
+import java.util.List;
+
+import javax.annotation.PostConstruct;
+
 import org.georchestra.gateway.accounts.admin.ldap.GeorchestraLdapAccountManagementConfiguration;
+import org.georchestra.gateway.security.ldap.extended.ExtendedLdapAuthenticationConfiguration;
+import org.georchestra.gateway.security.ldap.extended.ExtendedLdapConfig;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Import;
+
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
 /**
  * {@link AutoConfiguration @AutoConfiguration}
@@ -30,6 +39,17 @@ import org.springframework.context.annotation.Import;
  */
 @AutoConfiguration
 @ConditionalOnCreateLdapAccounts
-@Import(GeorchestraLdapAccountManagementConfiguration.class)
+@Import({ GeorchestraLdapAccountManagementConfiguration.class, ExtendedLdapAuthenticationConfiguration.class })
+@RequiredArgsConstructor
 public class GeorchestraLdapAccountsCreationAutoConfiguration {
+
+    @NonNull
+    private final List<ExtendedLdapConfig> configs;
+
+    @PostConstruct
+    void failIfNoExtendedLdapCongfigs() {
+        if (configs.isEmpty()) {
+            throw new IllegalStateException("LDAP account creation requires an extended LDAP configuration");
+        }
+    }
 }

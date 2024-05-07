@@ -18,15 +18,7 @@
  */
 package org.georchestra.gateway.app;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
-
-import javax.annotation.PostConstruct;
-
+import lombok.extern.slf4j.Slf4j;
 import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties;
 import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties.Server;
 import org.georchestra.gateway.security.GeorchestraUserMapper;
@@ -46,18 +38,24 @@ import org.springframework.context.event.EventListener;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.core.env.Environment;
 import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
-
-import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
-@RestController
+import javax.annotation.PostConstruct;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+
+@Controller
 @Slf4j
 @SpringBootApplication
 @EnableConfigurationProperties(GeorchestraGatewaySecurityConfigProperties.class)

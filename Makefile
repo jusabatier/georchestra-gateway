@@ -12,3 +12,6 @@ docker:
 	echo tagging georchestra/gateway:$${TAG} as georchestra/gateway:latest && \
 	docker tag georchestra/gateway:$${TAG} georchestra/gateway:latest && \
 	docker images|grep "georchestra/gateway"|grep latest
+
+deb: install
+	./mvnw package deb:package -f gateway/ -PdebianPackage

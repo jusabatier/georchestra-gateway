@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 by the geOrchestra PSC
+ * Copyright (C) 2024 by the geOrchestra PSC
  *
  * This file is part of geOrchestra.
  *
@@ -16,18 +16,15 @@
  * You should have received a copy of the GNU General Public License along with
  * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.georchestra.gateway.accounts.admin;
+package org.georchestra.gateway.security.exceptions;
 
-import org.georchestra.security.model.GeorchestraUser;
+@SuppressWarnings("serial")
+public class DuplicatedUsernameFoundException extends RuntimeException {
 
-import lombok.NonNull;
-import lombok.Value;
+    public DuplicatedUsernameFoundException(String message) {
+        super(message);
+    }
 
-/**
- * Application event published when a new account has been created
- */
-@Value
-public class AccountCreated {
-
-    private @NonNull GeorchestraUser user;
+    public DuplicatedUsernameFoundException() {
+    }
 }

@@ -1,7 +1,9 @@
 package org.georchestra.gateway.filter.headers;
 
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.List;
 
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -9,6 +11,7 @@ import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFac
 import org.springframework.cloud.gateway.route.Route;
 import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.security.access.AccessDeniedException;
 
 public class ProxyGatewayFilterFactory extends AbstractGatewayFilterFactory<Object> {
     public ProxyGatewayFilterFactory() {
@@ -20,18 +23,26 @@ public class ProxyGatewayFilterFactory extends AbstractGatewayFilterFactory<Obje
         return (exchange, chain) -> {
             Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
             ServerHttpRequest request = exchange.getRequest();
-            List<String> urls = request.getQueryParams().get("url");
-            if ((urls != null) && (urls.size() == 1)) {
+            List<String> remoteUrls = request.getQueryParams().get("url");
+            if ((remoteUrls != null) && (remoteUrls.size() == 1)) {
                 try {
-                    request = exchange.getRequest().mutate().uri(new URI(urls.get(0))).build();
+                    URI remoteUrl = URI.create(remoteUrls.get(0));
+                    String remoteHost = remoteUrl.getHost();
+                    InetAddress address = InetAddress.getByName(remoteHost);
+                    if (address.isSiteLocalAddress() || address.isLoopbackAddress()) {
+                        throw new AccessDeniedException("provided url is forbidden");
+                    }
 
-                    Route newRoute = Route.async().id(route.getId()).uri(new URI(urls.get(0))).order(route.getOrder())
-                            .asyncPredicate(route.getPredicate()).build();
+                    request = exchange.getRequest().mutate().uri(remoteUrl).header("Host", remoteHost).build();
+
+                    Route newRoute = Route.async().id(route.getId()).uri(new URI(remoteUrls.get(0)))
+                            .order(route.getOrder()).asyncPredicate(route.getPredicate()).build();
 
                     exchange.getAttributes().put(AddSecHeadersGatewayFilterFactory.DISABLE_SECURITY_HEADERS, "true");
                     exchange.getAttributes().put(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR, newRoute);
                     return chain.filter(exchange.mutate().request(request).build());
                 } catch (URISyntaxException e) {
+                } catch (UnknownHostException e) {
                 }
             }
             return chain.filter(exchange);

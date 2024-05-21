@@ -18,7 +18,6 @@
  */
 package org.georchestra.gateway.accounts.admin.ldap;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -36,11 +35,13 @@ import org.georchestra.ds.users.AccountDao;
 import org.georchestra.ds.users.AccountFactory;
 import org.georchestra.ds.users.DuplicatedEmailException;
 import org.georchestra.ds.users.DuplicatedUidException;
-import org.georchestra.gateway.accounts.admin.AbstractAccountsManager;;
+import org.georchestra.gateway.accounts.admin.AbstractAccountsManager;
 import org.georchestra.gateway.accounts.admin.AccountManager;
-import org.georchestra.security.api.UsersApi;
+import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties;
+import org.georchestra.gateway.security.exceptions.DuplicatedEmailFoundException;
+import org.georchestra.gateway.security.exceptions.DuplicatedUsernameFoundException;
+import org.georchestra.gateway.security.ldap.extended.DemultiplexingUsersApi;
 import org.georchestra.security.model.GeorchestraUser;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.ldap.NameNotFoundException;
 
@@ -55,30 +56,31 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j(topic = "org.georchestra.gateway.accounts.admin.ldap")
 class LdapAccountsManager extends AbstractAccountsManager {
 
-    private @Value("${georchestra.gateway.security.defaultOrganization:}") String defaultOrganization;
+    private final @NonNull GeorchestraGatewaySecurityConfigProperties georchestraGatewaySecurityConfigProperties;
     private final @NonNull AccountDao accountDao;
     private final @NonNull RoleDao roleDao;
-
     private final @NonNull OrgsDao orgsDao;
-    private final @NonNull UsersApi usersApi;
+    private final @NonNull DemultiplexingUsersApi demultiplexingUsersApi;
 
     public LdapAccountsManager(ApplicationEventPublisher eventPublisher, AccountDao accountDao, RoleDao roleDao,
-            OrgsDao orgsDao, UsersApi usersApi) {
+            OrgsDao orgsDao, DemultiplexingUsersApi demultiplexingUsersApi,
+            GeorchestraGatewaySecurityConfigProperties georchestraGatewaySecurityConfigProperties) {
         super(eventPublisher);
         this.accountDao = accountDao;
         this.roleDao = roleDao;
         this.orgsDao = orgsDao;
-        this.usersApi = usersApi;
+        this.demultiplexingUsersApi = demultiplexingUsersApi;
+        this.georchestraGatewaySecurityConfigProperties = georchestraGatewaySecurityConfigProperties;
     }
 
     @Override
     protected Optional<GeorchestraUser> findByOAuth2Uid(@NonNull String oAuth2Provider, @NonNull String oAuth2Uid) {
-        return usersApi.findByOAuth2Uid(oAuth2Provider, oAuth2Uid).map(this::ensureRolesPrefixed);
+        return demultiplexingUsersApi.findByOAuth2Uid(oAuth2Provider, oAuth2Uid).map(this::ensureRolesPrefixed);
     }
 
     @Override
     protected Optional<GeorchestraUser> findByUsername(@NonNull String username) {
-        return usersApi.findByUsername(username).map(this::ensureRolesPrefixed);
+        return demultiplexingUsersApi.findByUsername(username).map(this::ensureRolesPrefixed);
     }
 
     private GeorchestraUser ensureRolesPrefixed(GeorchestraUser user) {
@@ -89,15 +91,26 @@ class LdapAccountsManager extends AbstractAccountsManager {
     }
 
     @Override
-    protected void createInternal(GeorchestraUser mapped) {
+    protected void createInternal(GeorchestraUser mapped) throws DuplicatedEmailFoundException {
         Account newAccount = mapToAccountBrief(mapped);
         try {
             accountDao.insert(newAccount);
-        } catch (DataServiceException | DuplicatedUidException | DuplicatedEmailException accountError) {
+        } catch (DataServiceException accountError) {
             throw new IllegalStateException(accountError);
+        } catch (DuplicatedEmailException accountError) {
+            throw new DuplicatedEmailFoundException(accountError.getMessage());
+        } catch (DuplicatedUidException accountError) {
+            throw new DuplicatedUsernameFoundException(accountError.getMessage());
         }
 
-        ensureOrgExists(newAccount);
+        try {
+            ensureOrgExists(newAccount);
+        } catch (IllegalStateException orgError) {
+            log.error("Error when trying to create / update the organisation {}, reverting the account creation",
+                    newAccount.getOrg(), orgError);
+            rollbackAccount(newAccount, newAccount.getOrg());
+            throw orgError;
+        }
 
         ensureRolesExist(mapped, newAccount);
     }
@@ -150,48 +163,65 @@ class LdapAccountsManager extends AbstractAccountsManager {
         Account newAccount = AccountFactory.createBrief(username, password, firstName, lastName, email, phone, title,
                 description, oAuth2Provider, oAuth2Uid);
         newAccount.setPending(false);
-        if (StringUtils.isEmpty(org) && !StringUtils.isBlank(defaultOrganization)) {
-            newAccount.setOrg(defaultOrganization);
+        String defaultOrg = this.georchestraGatewaySecurityConfigProperties.getDefaultOrganization();
+        if (StringUtils.isEmpty(org) && !StringUtils.isBlank(defaultOrg)) {
+            newAccount.setOrg(defaultOrg);
         } else {
             newAccount.setOrg(org);
         }
         return newAccount;
     }
 
+    /**
+     * @throws IllegalStateException if the org can't be created/updated
+     */
     private void ensureOrgExists(@NonNull Account newAccount) {
-        String orgId = newAccount.getOrg();
-        if (StringUtils.isEmpty(orgId))
-            return;
-        try { // account created, add org
-            Org org;
-            try {
-                org = orgsDao.findByCommonName(orgId);
-                // org already in the LDAP, add the newly
-                // created account to it
-                List<String> currentMembers = org.getMembers();
-                currentMembers.add(newAccount.getUid());
-                org.setMembers(currentMembers);
-                orgsDao.update(org);
-            } catch (NameNotFoundException e) {
-                log.info("Org {} does not exist, trying to create it", orgId);
-                // org does not exist yet, create it
-                org = new Org();
-                org.setId(orgId);
-                org.setName(orgId);
-                org.setShortName(orgId);
-                org.setOrgType("Other");
-                org.setMembers(Arrays.asList(newAccount.getUid()));
-                orgsDao.insert(org);
-            }
+        final String orgId = newAccount.getOrg();
+        if (!StringUtils.isEmpty(orgId)) {
+            findOrg(orgId).ifPresentOrElse(org -> addAccountToOrg(newAccount, org),
+                    () -> createOrgAndAddAccount(newAccount, orgId));
+        }
+    }
+
+    private void createOrgAndAddAccount(Account newAccount, final String orgId) {
+        try {
+            log.info("Org {} does not exist, trying to create it", orgId);
+            Org org = newOrg(orgId);
+            org.getMembers().add(newAccount.getUid());
+            orgsDao.insert(org);
         } catch (Exception orgError) {
-            log.error("Error when trying to create / update the organisation {}, reverting the account creation", orgId,
-                    orgError);
-            try {// roll-back account
-                accountDao.delete(newAccount);
-            } catch (NameNotFoundException | DataServiceException rollbackError) {
-                log.warn("Error reverting user creation after orgsDao update failure", rollbackError);
-            }
             throw new IllegalStateException(orgError);
         }
+    }
+
+    private void addAccountToOrg(Account newAccount, Org org) {
+        // org already in the LDAP, add the newly created account to it
+        org.getMembers().add(newAccount.getUid());
+        orgsDao.update(org);
+    }
+
+    private Optional<Org> findOrg(String orgId) {
+        try {
+            return Optional.of(orgsDao.findByCommonName(orgId));
+        } catch (NameNotFoundException e) {
+            return Optional.empty();
+        }
+    }
+
+    private void rollbackAccount(Account newAccount, final String orgId) {
+        try {// roll-back account
+            accountDao.delete(newAccount);
+        } catch (NameNotFoundException | DataServiceException rollbackError) {
+            log.warn("Error reverting user creation after orgsDao update failure", rollbackError);
+        }
+    }
+
+    private Org newOrg(final String orgId) {
+        Org org = new Org();
+        org.setId(orgId);
+        org.setName(orgId);
+        org.setShortName(orgId);
+        org.setOrgType("Other");
+        return org;
     }
 }

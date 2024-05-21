@@ -18,25 +18,19 @@
  */
 package org.georchestra.gateway.accounts.admin.ldap;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.georchestra.ds.orgs.OrgsDao;
 import org.georchestra.ds.users.AccountDao;
-import org.georchestra.gateway.security.ldap.LdapConfigProperties;
+import org.georchestra.gateway.security.ldap.extended.ExtendedLdapAuthenticationConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.annotation.UserConfigurations;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.context.annotation.Configuration;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class GeorchestraLdapAccessConfigurationTest {
 
-    @EnableConfigurationProperties(LdapConfigProperties.class)
-    static @Configuration class EnableConfigProps {
-    }
-
-    private ApplicationContextRunner runner = new ApplicationContextRunner()
-            .withConfiguration(UserConfigurations.of(GeorchestraLdapAccountManagementConfiguration.class));
+    private ApplicationContextRunner runner = new ApplicationContextRunner().withConfiguration(UserConfigurations
+            .of(GeorchestraLdapAccountManagementConfiguration.class, ExtendedLdapAuthenticationConfiguration.class));
 
     public @Test void accountsAndRolesDaoRelatedBeansAreAvailable() {
         runner.withPropertyValues(""//
@@ -52,10 +46,20 @@ public class GeorchestraLdapAccessConfigurationTest {
                 , "georchestra.gateway.security.ldap.default.roles.rdn: ou=roles" //
                 , "georchestra.gateway.security.ldap.default.roles.searchFilter: (member={0})"//
                 , "georchestra.gateway.security.ldap.default.orgs.rdn: ou=orgs,dc=tes,dc=com"//
-                , "georchestra.gateway.security.createNonExistingUsersInLDAP: true" //
+                , "georchestra.gateway.security.create-non-existing-users-in-l-d-a-p: true" //
 
         ).run(context -> {
             assertThat(context).hasNotFailed().hasSingleBean(OrgsDao.class).hasSingleBean(AccountDao.class);
+        });
+    }
+
+    public @Test void contextShouldFailIfCreateNonExistingTrueButNoDefaultExtendedLdap() {
+        runner.withPropertyValues(""//
+                , "georchestra.gateway.security.ldap.default.enabled: false" //
+                , "georchestra.gateway.security.create-non-existing-users-in-l-d-a-p: true" //
+
+        ).run(context -> {
+            assertThat(context).hasFailed();
         });
     }
 }

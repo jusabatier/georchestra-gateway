@@ -18,17 +18,11 @@
  */
 package org.georchestra.gateway.app;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
-
-import javax.annotation.PostConstruct;
-
+import lombok.extern.slf4j.Slf4j;
+import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties;
+import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties.Server;
 import org.georchestra.gateway.security.GeorchestraUserMapper;
-import org.georchestra.gateway.security.ldap.LdapConfigProperties;
+import org.georchestra.gateway.security.exceptions.DuplicatedEmailFoundException;
 import org.georchestra.security.model.GeorchestraUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,20 +45,26 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.server.ServerWebExchange;
-
-import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
+
+import javax.annotation.PostConstruct;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @Controller
 @Slf4j
 @SpringBootApplication
-@EnableConfigurationProperties(LdapConfigProperties.class)
+@EnableConfigurationProperties(GeorchestraGatewaySecurityConfigProperties.class)
 public class GeorchestraGatewayApplication {
 
     private @Autowired RouteLocator routeLocator;
     private @Autowired GeorchestraUserMapper userMapper;
 
-    private @Autowired(required = false) LdapConfigProperties ldapConfigProperties;
+    private @Autowired(required = false) GeorchestraGatewaySecurityConfigProperties georchestraGatewaySecurityConfigProperties;
 
     private boolean ldapEnabled = false;
 
@@ -79,15 +79,22 @@ public class GeorchestraGatewayApplication {
 
     @PostConstruct
     void initialize() {
-        if (ldapConfigProperties != null) {
-            ldapEnabled = ldapConfigProperties.getLdap().values().stream().anyMatch((server -> server.isEnabled()));
+        if (georchestraGatewaySecurityConfigProperties != null) {
+            ldapEnabled = georchestraGatewaySecurityConfigProperties.getLdap().values().stream()
+                    .anyMatch((Server::isEnabled));
         }
     }
 
     @GetMapping(path = "/whoami", produces = "application/json")
     @ResponseBody
     public Mono<Map<String, Object>> whoami(Authentication principal, ServerWebExchange exchange) {
-        GeorchestraUser user = Optional.ofNullable(principal).flatMap(userMapper::resolve).orElse(null);
+        GeorchestraUser user;
+        try {
+            user = Optional.ofNullable(principal).flatMap(userMapper::resolve).orElse(null);
+        } catch (DuplicatedEmailFoundException e) {
+            user = null;
+        }
+
         Map<String, Object> ret = new LinkedHashMap<>();
         ret.put("GeorchestraUser", user);
         if (principal == null) {
@@ -96,8 +103,6 @@ public class GeorchestraGatewayApplication {
             ret.put(principal.getClass().getCanonicalName(), principal);
         }
         return Mono.just(ret);
-        // return principal == null ? Mono.empty() :
-        // Mono.just(Map.of(principal.getClass().getCanonicalName(), principal));
     }
 
     @GetMapping(path = "/logout")
@@ -108,7 +113,7 @@ public class GeorchestraGatewayApplication {
 
     @GetMapping(path = "/login")
     public String loginPage(@RequestParam Map<String, String> allRequestParams, Model mdl) {
-        Map<String, String> oauth2LoginLinks = new HashMap<String, String>();
+        Map<String, String> oauth2LoginLinks = new HashMap<>();
         if (oauth2ClientConfig != null) {
             oauth2ClientConfig.getRegistration().forEach((k, v) -> {
                 String clientName = Optional.ofNullable(v.getClientName()).orElse(k);
@@ -123,6 +128,8 @@ public class GeorchestraGatewayApplication {
         mdl.addAttribute("passwordExpired", expired);
         boolean invalidCredentials = "invalid_credentials".equals(allRequestParams.get("error"));
         mdl.addAttribute("invalidCredentials", invalidCredentials);
+        boolean duplicateAccount = "duplicate_account".equals(allRequestParams.get("error"));
+        mdl.addAttribute("duplicateAccount", duplicateAccount);
         return "login";
     }
 
@@ -152,6 +159,10 @@ public class GeorchestraGatewayApplication {
                 routeCount, instanceId, cpus, maxMem);
     }
 
+    /**
+     * REVISIT: why do we need to define this bean in the Application class and not
+     * in a configuration that depends on whether rabbit is enabled?
+     */
     @Bean
     public MessageSource messageSource() {
         ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();

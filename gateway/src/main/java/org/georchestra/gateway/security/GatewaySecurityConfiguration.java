@@ -29,14 +29,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity.LogoutSpec;
-import org.springframework.security.oauth2.client.oidc.web.server.logout.OidcClientInitiatedServerLogoutSuccessHandler;
-import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.logout.RedirectServerLogoutSuccessHandler;
 import org.springframework.security.web.server.authentication.logout.ServerLogoutSuccessHandler;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -85,9 +85,8 @@ public class GatewaySecurityConfiguration {
         // by proxified webapps, not the gateway.
         http.csrf().disable();
 
-        http.formLogin()
-                .authenticationFailureHandler(new ExtendedRedirectServerAuthenticationFailureHandler("login?error"))
-                .loginPage("/login");
+        // custom handling for forbidden error
+        http.exceptionHandling().accessDeniedHandler(new CustomAccessDeniedHandler());
 
         sortedCustomizers(customizers).forEach(customizer -> {
             log.debug("Applying security customizer {}", customizer.getName());
@@ -99,7 +98,8 @@ public class GatewaySecurityConfiguration {
         RedirectServerLogoutSuccessHandler defaultRedirect = new RedirectServerLogoutSuccessHandler();
         defaultRedirect.setLogoutSuccessUrl(URI.create(georchestraLogoutUrl));
 
-        LogoutSpec logoutUrl = http.formLogin().loginPage("/login").and().logout().logoutUrl("/logout")
+        LogoutSpec logoutUrl = http.formLogin().loginPage("/login").and().logout()
+                .requiresLogout(ServerWebExchangeMatchers.pathMatchers(HttpMethod.GET, "/logout"))
                 .logoutSuccessHandler(oidcLogoutSuccessHandler != null ? oidcLogoutSuccessHandler : defaultRedirect);
 
         return logoutUrl.and().build();

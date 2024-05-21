@@ -277,6 +277,7 @@ sec-org: 6007280321
 ```
 
 == External authentication
+
 Whenever an external authentication is used (OAuth2 or external IDP), a new attribute is added to Header, named :
 ```
 sec-external-authentication
@@ -287,3 +288,25 @@ This allows the proxified webapps to adapt their behaviour consequently:
 as an example, it does not make sense to display a password update form in the geOrchestra
 console if the user is logged in via a third party identity provider. +
 Having the flag passed in the HTTP headers allows to enable or disable such a functionality.
+
+== Automatically creating users in a geOrchestra LDAP
+
+As in the <<pre-authentication.adoc#,pre-authentication method>>, it is possible
+to create externally authenticated users into a geOrchestra (extended) LDAP, so
+that an administrator can promote the user to a higher role than `USER` by default.
+
+In order to do so, you will need to set the following property, and make sure
+an `extended` LDAP named `default` is defined, as in the following configuration
+snippet:
+
+```
+georchestra:
+  gateway:
+    security:
+      create-non-existing-users-in-l-d-a-p: true
+      ldap:
+        default:
+          enabled: true
+          extended: true
+          [...]
+```

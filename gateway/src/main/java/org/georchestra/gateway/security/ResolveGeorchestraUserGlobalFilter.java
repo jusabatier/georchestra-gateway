@@ -98,7 +98,9 @@ public class ResolveGeorchestraUserGlobalFilter implements GlobalFilter, Ordered
                     if (usr != null && usr instanceof ExtendedGeorchestraUser) {
                         ExtendedGeorchestraUser eu = (ExtendedGeorchestraUser) usr;
                         Organization org = eu.getOrg();
-                        GeorchestraOrganizations.store(exchange, org);
+                        if (org != null) {
+                            GeorchestraOrganizations.store(exchange, org);
+                        }
                     }
                     return exchange;
                 })//

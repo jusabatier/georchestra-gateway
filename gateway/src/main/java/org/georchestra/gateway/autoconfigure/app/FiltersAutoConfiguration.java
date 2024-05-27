@@ -45,7 +45,8 @@ public class FiltersAutoConfiguration {
      * matched Route's GeorchestraTargetConfig for each HTTP request-response
      * interaction before other filters are applied.
      */
-    @Bean ResolveTargetGlobalFilter resolveTargetWebFilter(GatewayConfigProperties config) {
+    @Bean
+    ResolveTargetGlobalFilter resolveTargetWebFilter(GatewayConfigProperties config) {
         return new ResolveTargetGlobalFilter(config);
     }
 
@@ -66,7 +67,8 @@ public class FiltersAutoConfiguration {
         return new StripBasePathGatewayFilterFactory();
     }
 
-    @Bean ApplicationErrorGatewayFilterFactory applicationErrorGatewayFilterFactory() {
+    @Bean
+    ApplicationErrorGatewayFilterFactory applicationErrorGatewayFilterFactory() {
         return new ApplicationErrorGatewayFilterFactory();
     }
 }

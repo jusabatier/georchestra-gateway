@@ -20,6 +20,7 @@ package org.georchestra.gateway.autoconfigure.app;
 
 import org.georchestra.gateway.filter.global.ResolveTargetGlobalFilter;
 import org.georchestra.gateway.filter.headers.HeaderFiltersConfiguration;
+import org.georchestra.gateway.filter.global.ApplicationErrorGatewayFilterFactory;
 import org.georchestra.gateway.model.GatewayConfigProperties;
 import org.georchestra.gateway.model.GeorchestraTargetConfig;
 import org.geoserver.cloud.gateway.filter.RouteProfileGatewayFilterFactory;
@@ -44,7 +45,7 @@ public class FiltersAutoConfiguration {
      * matched Route's GeorchestraTargetConfig for each HTTP request-response
      * interaction before other filters are applied.
      */
-    public @Bean ResolveTargetGlobalFilter resolveTargetWebFilter(GatewayConfigProperties config) {
+    @Bean ResolveTargetGlobalFilter resolveTargetWebFilter(GatewayConfigProperties config) {
         return new ResolveTargetGlobalFilter(config);
     }
 
@@ -63,5 +64,9 @@ public class FiltersAutoConfiguration {
 
     public @Bean StripBasePathGatewayFilterFactory stripBasePathGatewayFilterFactory() {
         return new StripBasePathGatewayFilterFactory();
+    }
+
+    @Bean ApplicationErrorGatewayFilterFactory applicationErrorGatewayFilterFactory() {
+        return new ApplicationErrorGatewayFilterFactory();
     }
 }

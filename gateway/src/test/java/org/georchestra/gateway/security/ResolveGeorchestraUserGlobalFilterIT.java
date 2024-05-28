@@ -110,6 +110,7 @@ public class ResolveGeorchestraUserGlobalFilterIT {
 
     public @Test void testSecOrgnamePresent() {
         testClient.get().uri("/echo/")//
+                .header("Host", "localhost")//
                 .header("Authorization", "Basic dGVzdGFkbWluOnRlc3RhZG1pbg==") // testadmin:testadmin
                 .exchange()//
                 .expectStatus()//

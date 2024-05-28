@@ -68,6 +68,7 @@ public class ResolveGeorchestraUserGlobalFilterIT {
         assertNotNull(context.getBean(JsonPayloadHeadersContributor.class));
 
         testClient.get().uri("/echo/")//
+                .header("Host", "localhost")//
                 .header("Authorization", "Basic dGVzdGFkbWluOnRlc3RhZG1pbg==") // testadmin:testadmin
                 .exchange()//
                 .expectStatus()//
@@ -81,6 +82,7 @@ public class ResolveGeorchestraUserGlobalFilterIT {
         gatewayConfig.getDefaultHeaders().setJsonOrganization(Optional.of(false));
 
         testClient.get().uri("/echo/")//
+                .header("Host", "localhost")//
                 .header("Authorization", "Basic dGVzdGFkbWluOnRlc3RhZG1pbg==") // testadmin:testadmin
                 .exchange()//
                 .expectStatus()//
@@ -96,6 +98,7 @@ public class ResolveGeorchestraUserGlobalFilterIT {
         gatewayConfig.getDefaultHeaders().setJsonOrganization(Optional.of(true));
 
         testClient.get().uri("/echo/")//
+                .header("Host", "localhost")//
                 .header("Authorization", "Basic dGVzdGFkbWluOnRlc3RhZG1pbg==") // testadmin:testadmin
                 .exchange()//
                 .expectStatus()//
@@ -107,6 +110,7 @@ public class ResolveGeorchestraUserGlobalFilterIT {
 
     public @Test void testSecOrgnamePresent() {
         testClient.get().uri("/echo/")//
+                .header("Host", "localhost")//
                 .header("Authorization", "Basic dGVzdGFkbWluOnRlc3RhZG1pbg==") // testadmin:testadmin
                 .exchange()//
                 .expectStatus()//

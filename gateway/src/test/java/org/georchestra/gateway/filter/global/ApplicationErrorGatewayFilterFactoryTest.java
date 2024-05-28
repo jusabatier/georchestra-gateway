@@ -22,7 +22,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR;
 import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR;
 
 import java.net.URI;
@@ -32,21 +35,24 @@ import org.georchestra.gateway.model.HeaderMappings;
 import org.georchestra.gateway.model.RoleBasedAccessRule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.handler.FilteringWebHandler;
 import org.springframework.cloud.gateway.route.Route;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
+import org.springframework.mock.http.server.reactive.MockServerHttpResponse;
 import org.springframework.mock.web.server.MockServerWebExchange;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
 
 class ApplicationErrorGatewayFilterFactoryTest {
-	
-	
-	private GatewayFilterChain chain;
-	private GatewayFilter filter;
+
+    private GatewayFilter filter;
     private MockServerWebExchange exchange;
 
     final URI matchedURI = URI.create("http://fake.backend.com:8080");
@@ -57,47 +63,59 @@ class ApplicationErrorGatewayFilterFactoryTest {
 
     @BeforeEach
     void setUp() throws Exception {
-    	var factory = new ApplicationErrorGatewayFilterFactory();
-		filter = factory.apply(factory.newConfig());
+        var factory = new ApplicationErrorGatewayFilterFactory();
+        filter = factory.apply(factory.newConfig());
 
         matchedRoute = mock(Route.class);
         when(matchedRoute.getUri()).thenReturn(matchedURI);
 
-		chain = mock(GatewayFilterChain.class);
-        when(chain.filter(any())).thenReturn(Mono.empty());
         MockServerHttpRequest request = MockServerHttpRequest.get("/test").build();
         exchange = MockServerWebExchange.from(request);
         exchange.getAttributes().put(GATEWAY_ROUTE_ATTR, matchedRoute);
+        exchange.getAttributes().put(GATEWAY_REQUEST_URL_ATTR, matchedURI);
+
     }
 
     @Test
-	void testNotAnErrorResponse() {
-		exchange.getResponse().setStatusCode(HttpStatus.OK);
-    	Mono<Void> result = filter.filter(exchange, chain);
-    	result.block();
-    	assertThat(exchange.getResponse().getRawStatusCode()).isEqualTo(200);
-	}
+    void testNotAnErrorResponse() {
+        GatewayFilterChain chain = mock(GatewayFilterChain.class);
+
+        filter.filter(exchange, chain);
+
+        ArgumentCaptor<ServerWebExchange> captor = ArgumentCaptor.forClass(ServerWebExchange.class);
+        verify(chain).filter(captor.capture());
+
+        ServerWebExchange mutated = captor.getValue();
+        ServerHttpResponse response = mutated.getResponse();
+        response.setStatusCode(HttpStatus.CREATED);
+
+        MockServerHttpResponse origResponse = exchange.getResponse();
+        assertThat(origResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    }
 
     @Test
     void test4xx() {
-		testApplicationError(HttpStatus.BAD_REQUEST);
-		testApplicationError(HttpStatus.UNAUTHORIZED);
-		testApplicationError(HttpStatus.FORBIDDEN);
-		testApplicationError(HttpStatus.NOT_FOUND);
+        testApplicationError(HttpStatus.BAD_REQUEST);
+        testApplicationError(HttpStatus.UNAUTHORIZED);
+        testApplicationError(HttpStatus.FORBIDDEN);
+        testApplicationError(HttpStatus.NOT_FOUND);
     }
-
 
     @Test
     void test5xx() {
-		testApplicationError(HttpStatus.INTERNAL_SERVER_ERROR);
-		testApplicationError(HttpStatus.SERVICE_UNAVAILABLE);
-		testApplicationError(HttpStatus.BAD_GATEWAY);
+        testApplicationError(HttpStatus.INTERNAL_SERVER_ERROR);
+        testApplicationError(HttpStatus.SERVICE_UNAVAILABLE);
+        testApplicationError(HttpStatus.BAD_GATEWAY);
     }
-    
-	private void testApplicationError(HttpStatus status) {
-		exchange.getResponse().setStatusCode(status);
-    	Mono<Void> result = filter.filter(exchange, chain);
-    	ResponseStatusException ex = assertThrows(ResponseStatusException.class, ()-> result.block());
-    	assertThat(ex.getStatus()).isEqualTo(status);
-	}
+
+    private void testApplicationError(HttpStatus status) {
+        GatewayFilterChain chain = mock(GatewayFilterChain.class);
+        filter.filter(exchange, chain);
+        ArgumentCaptor<ServerWebExchange> captor = ArgumentCaptor.forClass(ServerWebExchange.class);
+        verify(chain).filter(captor.capture());
+
+        ServerWebExchange mutated = captor.getValue();
+        ServerHttpResponse response = mutated.getResponse();
+        assertThrows(ResponseStatusException.class, () -> response.setStatusCode(status));
+    }
 }

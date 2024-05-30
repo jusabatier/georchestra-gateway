@@ -34,6 +34,7 @@ import java.security.Principal;
 import java.util.Optional;
 
 import org.georchestra.gateway.model.GeorchestraUsers;
+import org.georchestra.gateway.security.ldap.extended.ExtendedGeorchestraUser;
 import org.georchestra.security.model.GeorchestraUser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -110,6 +111,24 @@ class ResolveGeorchestraUserGlobalFilterTest {
         Authentication auth1 = mock(Authentication.class);
         GeorchestraUser user1 = mock(GeorchestraUser.class);
         when(mockMapper.resolve(same(auth1))).thenReturn(Optional.of(user1));
+
+        ServerWebExchange exchange = this.exchange.mutate().principal(Mono.just(auth1)).build();
+
+        filter.filter(exchange, mockChain).block();
+
+        verify(mockChain, times(1)).filter(same(exchange));
+        verify(mockMapper, times(1)).resolve(any());
+
+        Optional<GeorchestraUser> resolved = GeorchestraUsers.resolve(exchange);
+        assertSame(user1, resolved.orElseThrow());
+    }
+
+    @Test
+    void testFilter_UseResolvedWithoutOrganization() {
+        Authentication auth1 = mock(Authentication.class);
+        ExtendedGeorchestraUser user1 = mock(ExtendedGeorchestraUser.class);
+        when(mockMapper.resolve(same(auth1))).thenReturn(Optional.of(user1));
+        when(user1.getOrg()).thenReturn(null);
 
         ServerWebExchange exchange = this.exchange.mutate().principal(Mono.just(auth1)).build();
 

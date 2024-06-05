@@ -35,6 +35,14 @@ public class HeaderPreAuthenticationConfigurationIT {
             "preauth-lastname", "Martin", //
             "preauth-org", "C2C", //
             "Accept", "application/json");
+    private static final Map<String, String> ADMIN_HEADERS_CASE_INSENSITIVE = Map.of(//
+            "Sec-Georchestra-PreAuthenticated", "true", //
+            "Preauth-Username", "pmartin", //
+            "Preauth-Email", "pierre.martin@example.org", //
+            "Preauth-Firstname", "Pierre", //
+            "Preauth-Lastname", "Martin", //
+            "Preauth-Org", "C2C", //
+            "Accept", "application/json");
 
     private WebTestClient.RequestHeadersUriSpec<?> prepareWebTestClientHeaders(
             WebTestClient.RequestHeadersUriSpec<?> spec, Map<String, String> headers) {
@@ -47,6 +55,19 @@ public class HeaderPreAuthenticationConfigurationIT {
         assertNotNull(context.getBean(PreauthenticatedUserMapperExtension.class));
 
         ResponseSpec exchange = prepareWebTestClientHeaders(testClient.get(), ADMIN_HEADERS).uri("/whoami").exchange();
+        BodyContentSpec body = exchange.expectStatus().is2xxSuccessful().expectBody();
+        body.jsonPath("$.['GeorchestraUser']").isNotEmpty();
+        body.jsonPath(
+                "$.['org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken']")
+                .isNotEmpty();
+    }
+
+    public @Test void test_preauthenticatedHeadersAccess_case_insensitive() {
+        assertNotNull(context.getBean(PreauthGatewaySecurityCustomizer.class));
+        assertNotNull(context.getBean(PreauthenticatedUserMapperExtension.class));
+
+        ResponseSpec exchange = prepareWebTestClientHeaders(testClient.get(), ADMIN_HEADERS_CASE_INSENSITIVE)
+                .uri("/whoami").exchange();
         BodyContentSpec body = exchange.expectStatus().is2xxSuccessful().expectBody();
         body.jsonPath("$.['GeorchestraUser']").isNotEmpty();
         body.jsonPath(

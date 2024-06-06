@@ -2,8 +2,8 @@
 :toc:
 :toc-placement!:
 
-**georChestra Gateway** is a https://docs.spring.io/spring-cloud-gateway/docs/current/reference/html/[Spring Cloud Gateway]
-service acting as the single entry point to back-end georChestra applications, handling authentication and authorization
+**geOrchestra Gateway** is a https://docs.spring.io/spring-cloud-gateway/docs/current/reference/html/[Spring Cloud Gateway]
+service acting as the single entry point to back-end geOrchestra applications, handling authentication and authorization
 on their behalf.
 
 
@@ -39,7 +39,7 @@ the “post” filter logic is run.
 flowchart TB
     subgraph filters [Gateway Filter chain]
       direction TB
-      subgraph geor_filters [georChestra Filter chain]
+      subgraph geor_filters [geOrchestra Filter chain]
           remove_sec_headers(RemoveSecurityHeadersGatewayFilter)-->resolve_target
           resolve_target(ResolveTargetGlobalFilter)-->resolve_user(ResolveGeorchestraUserGlobalFilter)
           resolve_user-->add_sec_headers(AddSecHeadersGatewayFilter)

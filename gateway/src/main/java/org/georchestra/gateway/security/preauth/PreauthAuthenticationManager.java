@@ -56,21 +56,22 @@ public class PreauthAuthenticationManager implements ReactiveAuthenticationManag
     @Override
     public Mono<Authentication> convert(ServerWebExchange exchange) {
         if (isPreAuthenticated(exchange)) {
-            Map<String, String> credentials = extract(exchange.getRequest().getHeaders());
-            String username = credentials.get(PREAUTH_USERNAME);
+            HttpHeaders headers = exchange.getRequest().getHeaders();
+            String username = headers.getFirst(PREAUTH_USERNAME);
             if (!StringUtils.hasText(username)) {
                 throw new IllegalStateException("Pre-authenticated user headers not provided");
             }
             PreAuthenticatedAuthenticationToken authentication = new PreAuthenticatedAuthenticationToken(username,
-                    credentials, List.of());
+                    extract(headers), List.of());
             return Mono.just(authentication);
         }
         return Mono.empty();
     }
 
     private Map<String, String> extract(HttpHeaders headers) {
-        return headers.toSingleValueMap().entrySet().stream().filter(e -> e.getKey().startsWith("preauth-"))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return headers.toSingleValueMap().entrySet().stream()
+                .filter(e -> e.getKey().toLowerCase().startsWith("preauth-"))
+                .collect(Collectors.toMap(e -> e.getKey().toLowerCase(), Map.Entry::getValue));
     }
 
     @Override

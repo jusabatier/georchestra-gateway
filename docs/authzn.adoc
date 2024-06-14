@@ -149,13 +149,126 @@ georchestra:
 ----
 
 
-== OAuth2
+== OAuth2 & OpenID Connect
 
-=== OAuth2 Configuration
+OAuth2 authentication is enabled by setting `georchestra.gateway.security.oauth2.enabled` to `true`.
 
-== OpenID Connect
+=== Provider configuration
 
-=== Configuration
+Identity providers are declared as shown in https://docs.spring.io/spring-security/reference/servlet/oauth2/login/core.html[Spring OAuth2 Log In documentation].
+Some providers are natively supported by Spring, resulting in minimal configuration which often summarizes
+as defining `client-name`, `client-id` and `client-secret`, and `scope` as in the following example :
+[source,yaml]
+----
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-name: <display-name>
+            clientId: <client-id>
+            clientSecret: <client-secret>
+            scope: openid, email, profile
+----
+
+For providers compatible with OAuth2 or OpenID Connect but not natively supported, this section needs more
+details which depends on the provider used, shown in this example but may vary :
+[source,yaml]
+----
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          <provider-name>:
+            client-name: <display-name>
+            client-id: <client-id>
+            client-secret: <client-secret>
+            authorization-grant-type: authorization_code
+            redirect-uri: https://<gateway-url>/login/oauth2/code/<provider-name>
+            scope: openid, email, profile
+----
+
+Then an additional section is needed to define entry point URLs. With OpenID Connect, configuration can be
+automatically loaded using the discovery endpoint if the provider has one, by adding
+`spring.security.oauth2.provider.<provider-name>.issuer-uri: <configuration-entry-point-url>`
+(without specifying the `.well-known/openid-configuration` part).
+
+If the provider does not have this endpoint, configuration must be manually defined. An example is provided
+below, but it may vary according to provider configuration :
+[source,yaml]
+----
+spring:
+  security:
+    oauth2:
+      client:
+        provider:
+          <provider-name>:
+            authorization-uri: <authorization-entry-point-url>
+            token-uri: <token-entry-point-url>
+            user-info-uri: <user-info-entry-point-url>
+            end-session-uri: <end-session-entry-point-url>
+            user-name-attribute: sub
+----
+
+The `authorization-uri`, `token-uri` and `user-info-uri` endpoints are always required, but other parameters
+shown here may not, and other parameters not shown here may also be required. Please check
+https://docs.spring.io/spring-security/reference/servlet/oauth2/login/core.html#oauth2login-sample-application-config[Spring documentation]
+about available parameters, and note that `end-session-uri` is not a Spring parameter but an addition that
+was made to the gateway to add support for logout endpoint.
+
+Identity providers may ask about authorized callback URLs so that they can check which client domain has
+access to their identification feature with given secrets. Here are the callback URLs used by the gateway : +
+Login callback : `https://<gateway-url>/login/oauth2/code/<provider-name>` +
+Logout callback : `https://<gateway-url>/login?logout`
+
+=== FranceConnect provider
+
+FranceConnect is a widely used french identity provider which allows individuals to login on a public
+administration website using an account held by another public administration. It is available only to
+public entities, has some strict technical and ergonomics guidelines, and requires an administrative
+validation procedure where functionality of the website is fully tested against theses guidelines
+before providing production secrets. Until this procedure is complete, they provide integration secrets,
+endpoints, and dummy accounts for testing purpose.
+
+FranceConnect technical documentation is available https://partenaires.franceconnect.gouv.fr/fcp/fournisseur-service[here in French]. It requires some specific parameters to be used with the gateway. Here is an example of a working
+configuration using integration platform (URLs may change) :
+
+[source,yaml]
+----
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          <provider-name>:
+            client-name: <display-name>
+            clientId: <client-id>
+            clientSecret: <client-secret>
+            client-authentication-method: post
+            authorization-grant-type: authorization_code
+            redirect-uri: https://<gateway-url>/login/oauth2/code/<provider-name>
+            scope: openid, email, given_name, family_name
+        provider:
+          <provider-name>:
+            authorization-uri: https://fcp.integ01.dev-franceconnect.fr/api/v1/authorize
+            token-uri: https://fcp.integ01.dev-franceconnect.fr/api/v1/token
+            user-info-uri: https://fcp.integ01.dev-franceconnect.fr/api/v1/userinfo
+            end-session-uri: https://fcp.integ01.dev-franceconnect.fr/api/v1/logout
+            user-name-attribute: sub
+----
+
+`end-session-uri` is strictly mandatory because FranceConnect will keep track of active logins and won't
+allow a new login if the previous one was not logged out properly by a call to this endpoint. If locked
+when testing, login state can be reset by deleting FranceConnect cookies or by pasting this endpoint URL
+in the locked browser.
+
+FranceConnect does not support the general `profile` scope, so it is required to specify each necessary
+OpenID fields one by one, as in the example, in a list of supported fields. It will also show to the user
+when logging in which scope has been requested.
+
+=== Claims configuration
 
 Both standard and non-standard claims can be used to set the `GeorchestraUser`'s
 `organization` short name and `roles` properties using JSONPath expressions with

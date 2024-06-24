@@ -70,7 +70,8 @@ public class GeorchestraGatewayApplication {
 
     private @Autowired(required = false) OAuth2ClientProperties oauth2ClientConfig;
     private @Value("${georchestra.gateway.headerEnabled:true}") boolean headerEnabled;
-    private @Value("${georchestra.gateway.footerUrl:#{null}}") String georchestraFooterUrl;
+    // defined in georchestra datadir's default.properties
+    private @Value("${headerScript:https://cdn.jsdelivr.net/gh/georchestra/header@dist/header.js}") String headerScript;
     private @Value("${spring.messages.basename:}") String messagesBasename;
 
     public static void main(String[] args) {
@@ -121,7 +122,7 @@ public class GeorchestraGatewayApplication {
             });
         }
         mdl.addAttribute("header_enabled", headerEnabled);
-        mdl.addAttribute("footer_url", georchestraFooterUrl);
+        mdl.addAttribute("header_script", headerScript);
         mdl.addAttribute("ldapEnabled", ldapEnabled);
         mdl.addAttribute("oauth2LoginLinks", oauth2LoginLinks);
         boolean expired = "expired_password".equals(allRequestParams.get("error"));

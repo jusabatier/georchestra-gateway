@@ -1,0 +1,38 @@
+= UI customizations
+
+:toc:
+:toc-placement!:
+
+toc::[]
+
+== Main principles
+
+If you need to e.g. customize the login page / error pages, you can copy the templates provided under gateway/src/main/resources/templates into another directory, modify the templates to suit
+your needs, then reconfigure the gateway to point to the newly created directory:
+
+[source,yaml]
+----
+spring:
+  thymeleaf:
+    prefix: file:/path/to/templates/
+----
+
+See also the <<custom-error-pages.adoc#,documentation to customize the error pages>>.
+
+== header
+
+The header being integrated by default to every geOrchestra pages is also present onto the login page provided by the Gateway. If you look into the `login.html` template, you should see a `<geor-header></geor-header>` html tag somewhere in the file.
+
+The web component is sourced from a Javascript file defined in the `default.properties` file from the geOrchestra datadir. Below is a list of variables which can be configured to tweak the header integration:
+
+[source,yaml]
+----
+# From georchestra datadir's default.properties
+# URL to the Javascript definition of the <geor-header> web component
+headerScript: https://cdn.jsdelivr.net/gh/georchestra/header@dist/header.js
+
+
+# From the gateway's yaml configuration
+# includes or disables the <geor-header/> web component
+georchestra.gateway.headerEnabled: true
+----

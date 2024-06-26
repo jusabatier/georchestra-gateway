@@ -4,11 +4,11 @@
       [georchestra.org](https://www.georchestra.org/)
 
 -    **Where to get help**:  
-     the [geOrchestra Github repo](https://github.com/georchestra/georchestra), [IRC chat](https://kiwiirc.com/nextclient/irc.libera.chat/georchestra), Stack Overflow
+     the [geOrchestra Github repo](https://github.com/georchestra/georchestra), [IRC chat](https://matrix.to/#/#georchestra:osgeo.org), Stack Overflow
 
 # Featured tags
 
-- `latest`, `23.0.x`
+- `latest`, `24.0.0`
 
 # Quick reference
 
@@ -19,7 +19,7 @@
      [`amd64`](https://hub.docker.com/r/amd64/docker/)
 
 -	**Source of this description**:  
-     [docs repo's directory](https://github.com/georchestra/georchestra-gateway/blob/master/DOCKER_HUB.md)
+     [docs repo's directory](https://github.com/georchestra/georchestra-gateway/blob/main/DOCKER_HUB.md)
 
 # What is `georchestra/gateway`
 

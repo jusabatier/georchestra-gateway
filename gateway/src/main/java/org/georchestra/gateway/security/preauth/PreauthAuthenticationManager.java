@@ -48,6 +48,8 @@ public class PreauthAuthenticationManager implements ReactiveAuthenticationManag
     public static final String PREAUTH_LASTNAME = "preauth-lastname";
     public static final String PREAUTH_ORG = "preauth-org";
     public static final String PREAUTH_ROLES = "preauth-roles";
+    public static final String PREAUTH_PROVIDER = "preauth-provider";
+    public static final String PREAUTH_PROVIDER_ID = "preauth-provider-id";
 
     /**
      * @return {@code Mono.empty()} if the pre-auth request headers are not
@@ -93,6 +95,9 @@ public class PreauthAuthenticationManager implements ReactiveAuthenticationManag
         String lastName = SecurityHeaders.decode(requestHeaders.get(PREAUTH_LASTNAME));
         String org = SecurityHeaders.decode(requestHeaders.get(PREAUTH_ORG));
         String rolesValue = SecurityHeaders.decode(requestHeaders.get(PREAUTH_ROLES));
+        String provider = SecurityHeaders.decode(requestHeaders.get(PREAUTH_PROVIDER));
+        String providerId = SecurityHeaders.decode(requestHeaders.get(PREAUTH_PROVIDER_ID));
+
         List<String> roleNames = Optional.ofNullable(rolesValue)
                 .map(roles -> Stream
                         .concat(Stream.of("ROLE_USER"), Stream.of(roles.split(";")).filter(StringUtils::hasText))
@@ -106,6 +111,9 @@ public class PreauthAuthenticationManager implements ReactiveAuthenticationManag
         user.setLastName(lastName);
         user.setOrganization(org);
         user.setRoles(roleNames);
+        user.setOAuth2Provider(provider);
+        user.setOAuth2Uid(providerId);
+        //TODO rename oauth2 fields to a more generic name : externalProvider ?
         return user;
     }
 
@@ -117,5 +125,7 @@ public class PreauthAuthenticationManager implements ReactiveAuthenticationManag
         mutableHeaders.remove(PREAUTH_LASTNAME);
         mutableHeaders.remove(PREAUTH_ORG);
         mutableHeaders.remove(PREAUTH_ROLES);
+        mutableHeaders.remove(PREAUTH_PROVIDER);
+        mutableHeaders.remove(PREAUTH_PROVIDER_ID);
     }
 }

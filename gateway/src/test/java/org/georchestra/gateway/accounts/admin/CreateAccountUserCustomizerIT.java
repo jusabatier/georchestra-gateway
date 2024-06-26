@@ -60,7 +60,10 @@ public class CreateAccountUserCustomizerIT {
             "preauth-email", "pierre.martin2@example.org", //
             "preauth-firstname", "Pierre-Jean-Pierre", //
             "preauth-lastname", "Martin", //
-            "preauth-org", "NEWORG");
+            "preauth-org", "NEWORG",
+            "preauth-provider", "georchestra",
+            "preauth-provider-id", "georchestra12"
+            );
 
     private static final Map<String, String> ANOTHER_NOT_EXISTING_ACCOUNT_HEADERS_EXISTING_ORG = Map.of( //
             "sec-georchestra-preauthenticated", "true", //
@@ -113,7 +116,9 @@ public class CreateAccountUserCustomizerIT {
                 .is2xxSuccessful()//
                 .expectBody()//
                 .jsonPath("$.GeorchestraUser").isNotEmpty()//
-                .jsonPath("$.GeorchestraUser.organization").isEqualTo("NEWORG");
+                .jsonPath("$.GeorchestraUser.organization").isEqualTo("NEWORG")
+                .jsonPath("$.GeorchestraUser.oauth2Provider").isEqualTo("georchestra")
+                .jsonPath("$.GeorchestraUser.oauth2Uid").isEqualTo("georchestra12");
 
         // Make sure the account has been created
         assertNotNull(accountDao.findByUID("pmartin2"));

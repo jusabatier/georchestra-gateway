@@ -30,6 +30,8 @@ The following headers are expected to be received by the Gateway:
 * `preauth-firstname`: the first name of the user (e.g. "Pierre")
 * `preauth-lastname`: the surname of the user (e.g. "Mauduit")
 * `preauth-org`: the organisation identifier (e.g. "geOrchestra")
+* `preauth-provider`: __(optional)__ the external provider (e.g. "myexternalprovider")
+* `preauth-provider-id`: __(optional)__ the external provider identifier (e.g. "user_123456")
 
 == Charset considerations & encoded headers
 
@@ -152,6 +154,8 @@ The following Apache configuration has been used in a setup to interact with the
         RequestHeader unset preauth-firstname
         RequestHeader unset preauth-lastname
         RequestHeader unset preauth-org
+        RequestHeader unset preauth-provider
+        RequestHeader unset preauth-provider-id
 
         # The following ones are used by geOrchestra
         # You can find a list of headers here:
@@ -177,6 +181,8 @@ The following Apache configuration has been used in a setup to interact with the
         RequestHeader set preauth-firstname %{MELLON_GIVEN_NAME}e "expr=-n env('MELLON_GIVEN_NAME')"
         RequestHeader set preauth-lastname %{MELLON_SN}e "expr=-n env('MELLON_SN')"
         RequestHeader set preauth-org %{MELLON_O}e "expr=-n env('MELLON_O')"
+        RequestHeader set preauth-provider myexternalprovider "expr=-n env('MELLON_O')"
+        RequestHeader set preauth-provider-id %{MELLON_EPPN}e "expr=-n env('MELLON_EPPN')"
         # If needed to base64-encode the headers because of them containing accented characters, you can
         # use the following syntax and adapt the other headers above:
         # RequestHeader set preauth-lastname "expr={base64}%{base64:%{env:MELLON_SN}}"   "expr=-n env('MELLON_SN')"

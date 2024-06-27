@@ -47,7 +47,7 @@ jobs:
       run: docker push georchestra/gateway:latest
 
     - name: "Push tagged image to docker.io"
-      if: github.ref != 'refs/heads/main' && github.repository == 'georchestra/georchestra-gateway'
+      if: github.ref_type == 'tag' && github.ref != 'refs/heads/main' && github.repository == 'georchestra/georchestra-gateway'
       run: docker push georchestra/gateway:${{ steps.version.outputs.VERSION }}
 
     - name: "Update Gateway Docker Hub Description"

@@ -203,16 +203,6 @@ class AccessRulesCustomizerTest {
         verify(customizer, never()).permitAll(any());
     }
 
-    @Test
-    void testApplyRule_AppliesQueryParamAuthenticationRule() {
-        AuthorizeExchangeSpec spec = http.authorizeExchange();
-        RoleBasedAccessRule rule = rule("/test?login");
-        customizer = spy(customizer);
-        customizer.apply(spec, rule);
-
-        verify(customizer, times(1)).requireAuthenticatedUser(any());
-    }
-
     private RoleBasedAccessRule rule(String... interceptUrls) {
         RoleBasedAccessRule rule = new RoleBasedAccessRule();
         rule.setInterceptUrl(List.of(interceptUrls));

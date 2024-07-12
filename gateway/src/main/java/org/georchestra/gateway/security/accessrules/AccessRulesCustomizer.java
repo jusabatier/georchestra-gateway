@@ -30,15 +30,12 @@ import org.georchestra.gateway.security.ServerHttpSecurityCustomizer;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity.AuthorizeExchangeSpec;
 import org.springframework.security.config.web.server.ServerHttpSecurity.AuthorizeExchangeSpec.Access;
-import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
-import org.springframework.web.server.ServerWebExchange;
 
 import com.google.common.annotations.VisibleForTesting;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
 
 /**
  * {@link ServerHttpSecurityCustomizer} to apply {@link RoleBasedAccessRule ROLE
@@ -68,15 +65,6 @@ public class AccessRulesCustomizer implements ServerHttpSecurityCustomizer {
 
         // apply service-specific rules before global rules, order matters, and
         // otherwise global path matches would be applied before service ones.
-
-        log.info("Applying ?login query param rule...");
-        authorizeExchange.matchers(new ServerWebExchangeMatcher() {
-            @Override
-            public Mono<MatchResult> matches(ServerWebExchange exchange) {
-                var hasParam = exchange.getRequest().getQueryParams().containsKey("login");
-                return hasParam ? MatchResult.match() : MatchResult.notMatch();
-            }
-        }).authenticated();
 
         config.getServices().forEach((name, service) -> {
             log.info("Applying access rules for backend service '{}' at {}", name, service.getTarget());

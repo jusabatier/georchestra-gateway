@@ -21,6 +21,7 @@ package org.georchestra.gateway.autoconfigure.app;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.georchestra.gateway.filter.global.LoginParamRedirectGatewayFilterFactory;
 import org.georchestra.gateway.filter.global.ResolveTargetGlobalFilter;
 import org.georchestra.gateway.filter.headers.AddSecHeadersGatewayFilterFactory;
 import org.georchestra.gateway.filter.headers.RemoveHeadersGatewayFilterFactory;
@@ -44,7 +45,6 @@ class FiltersAutoConfigurationTest {
     @Test
     void testContext() {
         runner.run(context -> {
-
             assertThat(context).hasSingleBean(GatewayConfigProperties.class);
             assertThat(context).hasSingleBean(ResolveTargetGlobalFilter.class);
             assertThat(context).hasSingleBean(AddSecHeadersGatewayFilterFactory.class);
@@ -53,6 +53,7 @@ class FiltersAutoConfigurationTest {
             assertThat(context).hasSingleBean(GeorchestraOrganizationHeadersContributor.class);
             assertThat(context).hasSingleBean(RemoveHeadersGatewayFilterFactory.class);
             assertThat(context).hasSingleBean(RemoveSecurityHeadersGatewayFilterFactory.class);
+            assertThat(context).hasSingleBean(LoginParamRedirectGatewayFilterFactory.class);
         });
     }
 

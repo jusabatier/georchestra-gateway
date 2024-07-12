@@ -55,6 +55,7 @@ spring:
       - AddSecHeaders
       - PreserveHostHeader
       - ApplicationError
+      - LoginParamRedirect
       global-filter:
         websocket-routing:
           enabled: true

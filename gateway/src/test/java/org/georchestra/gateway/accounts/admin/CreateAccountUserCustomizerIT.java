@@ -60,10 +60,7 @@ public class CreateAccountUserCustomizerIT {
             "preauth-email", "pierre.martin2@example.org", //
             "preauth-firstname", "Pierre-Jean-Pierre", //
             "preauth-lastname", "Martin", //
-            "preauth-org", "NEWORG",
-            "preauth-provider", "georchestra",
-            "preauth-provider-id", "georchestra12"
-            );
+            "preauth-org", "NEWORG", "preauth-provider", "georchestra", "preauth-provider-id", "georchestra12");
 
     private static final Map<String, String> ANOTHER_NOT_EXISTING_ACCOUNT_HEADERS_EXISTING_ORG = Map.of( //
             "sec-georchestra-preauthenticated", "true", //

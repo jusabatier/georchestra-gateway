@@ -113,7 +113,7 @@ public class PreauthAuthenticationManager implements ReactiveAuthenticationManag
         user.setRoles(roleNames);
         user.setOAuth2Provider(provider);
         user.setOAuth2Uid(providerId);
-        //TODO rename oauth2 fields to a more generic name : externalProvider ?
+        // TODO rename oauth2 fields to a more generic name : externalProvider ?
         return user;
     }
 

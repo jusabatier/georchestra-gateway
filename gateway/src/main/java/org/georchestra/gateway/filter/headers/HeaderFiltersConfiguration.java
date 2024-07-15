@@ -58,11 +58,6 @@ public class HeaderFiltersConfiguration {
     }
 
     @Bean
-    ProxyGatewayFilterFactory proxyGatewayFilterFactory() {
-        return new ProxyGatewayFilterFactory();
-    }
-
-    @Bean
     GeorchestraUserHeadersContributor userSecurityHeadersProvider() {
         return new GeorchestraUserHeadersContributor();
     }

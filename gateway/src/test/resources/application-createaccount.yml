@@ -10,7 +10,6 @@ georchestra:
     global-access-rules:
       - intercept-url:
           - "/**"
-          - "/proxy/?url=*"
         anonymous: true
     security:
       createNonExistingUsersInLDAP: true

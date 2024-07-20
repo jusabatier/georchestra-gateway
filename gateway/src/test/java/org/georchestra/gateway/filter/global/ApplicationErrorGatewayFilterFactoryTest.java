@@ -18,104 +18,243 @@
  */
 package org.georchestra.gateway.filter.global;
 
+import static com.github.tomakehurst.wiremock.stubbing.StubMapping.buildFrom;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR;
-import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR;
 
-import java.net.URI;
-import java.util.List;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.stream.Stream;
 
-import org.georchestra.gateway.model.HeaderMappings;
-import org.georchestra.gateway.model.RoleBasedAccessRule;
+import org.georchestra.gateway.app.GeorchestraGatewayApplication;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.springframework.cloud.gateway.filter.GatewayFilter;
-import org.springframework.cloud.gateway.filter.GatewayFilterChain;
-import org.springframework.cloud.gateway.handler.FilteringWebHandler;
-import org.springframework.cloud.gateway.route.Route;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.server.reactive.ServerHttpResponse;
-import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
-import org.springframework.mock.http.server.reactive.MockServerHttpResponse;
-import org.springframework.mock.web.server.MockServerWebExchange;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.server.ServerWebExchange;
+import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
-import reactor.core.publisher.Mono;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 
+@SpringBootTest(classes = GeorchestraGatewayApplication.class, //
+        webEnvironment = WebEnvironment.RANDOM_PORT, //
+        properties = { //
+                "server.error.whitelabel.enabled=false", //
+                "georchestra.gateway.global-access-rules[0].intercept-url=/**", //
+                "georchestra.gateway.global-access-rules[0].anonymous=true" //
+        })
+@WireMockTest
 class ApplicationErrorGatewayFilterFactoryTest {
 
-    private GatewayFilter filter;
-    private MockServerWebExchange exchange;
+    /**
+     * saved in {@link #setUpWireMock}, to be used on {@link #registerRoutes}
+     */
+    private static WireMockRuntimeInfo wmRuntimeInfo;
 
-    final URI matchedURI = URI.create("http://fake.backend.com:8080");
-    private Route matchedRoute;
+    /**
+     * Set up stub requests for the wiremock server. WireMock is running on a random
+     * port, so this method saves {@link #wmRuntimeInfo} for
+     * {@link #registerRoutes(DynamicPropertyRegistry)}
+     */
+    @BeforeAll
+    static void saveWireMock(WireMockRuntimeInfo runtimeInfo) {
+        ApplicationErrorGatewayFilterFactoryTest.wmRuntimeInfo = runtimeInfo;
+    }
 
-    HeaderMappings defaultHeaders;
-    List<RoleBasedAccessRule> defaultRules;
+    /**
+     * Set up a gateway route that proxies all requests to the wiremock server
+     */
+    @DynamicPropertySource
+    static void registerRoutes(DynamicPropertyRegistry registry) {
+        String targetUrl = wmRuntimeInfo.getHttpBaseUrl();
+
+        registry.add("spring.cloud.gateway.routes[0].id", () -> "mockeduproute");
+        registry.add("spring.cloud.gateway.routes[0].uri", () -> targetUrl);
+        registry.add("spring.cloud.gateway.routes[0].predicates[0]", () -> "Path=/**");
+    }
+
+    @Autowired
+    TestRestTemplate testRestTemplate;
+
+    @SpyBean
+    ApplicationErrorGatewayFilterFactory factory;
 
     @BeforeEach
-    void setUp() throws Exception {
-        var factory = new ApplicationErrorGatewayFilterFactory();
-        filter = factory.apply(factory.newConfig());
+    void setUp(WireMockRuntimeInfo runtimeInfo) throws Exception {
+        StubMapping defaultResponse = buildFrom("""
+                {
+                    "priority": 100,
+                    "request": {"method": "ANY","urlPattern": ".*"},
+                    "response": {
+                        "status": 418,
+                        "jsonBody": { "status": "Error", "message": "I'm a teapot" },
+                        "headers": {"Content-Type": "application/json"}
+                    }
+                }
+                """);
 
-        matchedRoute = mock(Route.class);
-        when(matchedRoute.getUri()).thenReturn(matchedURI);
-
-        MockServerHttpRequest request = MockServerHttpRequest.get("/test").build();
-        exchange = MockServerWebExchange.from(request);
-        exchange.getAttributes().put(GATEWAY_ROUTE_ATTR, matchedRoute);
-        exchange.getAttributes().put(GATEWAY_REQUEST_URL_ATTR, matchedURI);
-
+        WireMock wireMock = runtimeInfo.getWireMock();
+        wireMock.register(defaultResponse);
     }
 
     @Test
-    void testNotAnErrorResponse() {
-        GatewayFilterChain chain = mock(GatewayFilterChain.class);
+    void testNonIdempotentHttpMethodsIgnored(WireMockRuntimeInfo runtimeInfo) {
+        StubMapping mapping = buildFrom("""
+                {
+                    "priority": 1,
+                    "request": {
+                        "method": "POST",
+                        "url": "/geonetwork",
+                        "headers": {
+                            "Accept": {"contains": "text/html"}
+                        }
+                    },
+                    "response": {
+                        "status": 400,
+                        "body": "Bad request from downstream",
+                        "headers": {
+                            "Content-Type": "text/plain",
+                            "X-Frame-Options": "ALLOW-FROM *.test.com",
+                            "X-Content-Type-Options": "nosniff",
+                            "Referrer-Policy": "same-origin"
+                        }
+                   }
+                }
+                """);
+        runtimeInfo.getWireMock().register(mapping);
 
-        filter.filter(exchange, chain);
+        ResponseEntity<String> response = testRestTemplate.postForEntity("/geonetwork",
+                withHeaders("Accept", "text/html"), String.class);
 
-        ArgumentCaptor<ServerWebExchange> captor = ArgumentCaptor.forClass(ServerWebExchange.class);
-        verify(chain).filter(captor.capture());
+        verify(factory, times(1)).canFilter(any());
+        verify(factory, never()).decorate(any());
 
-        ServerWebExchange mutated = captor.getValue();
-        ServerHttpResponse response = mutated.getResponse();
-        response.setStatusCode(HttpStatus.CREATED);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        Map<String, String> headers = response.getHeaders().toSingleValueMap();
+        Map<String, String> expected = Map.of(//
+                "Content-Type", "text/plain", //
+                "X-Frame-Options", "ALLOW-FROM *.test.com", //
+                "X-Content-Type-Options", "nosniff", //
+                "Referrer-Policy", "same-origin"//
 
-        MockServerHttpResponse origResponse = exchange.getResponse();
-        assertThat(origResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        );
+        assertThat(headers).as("response does not contain all original headers").containsAllEntriesOf(expected);
+        assertThat(response.getBody()).isEqualTo("Bad request from downstream");
     }
 
     @Test
-    void test4xx() {
-        testApplicationError(HttpStatus.BAD_REQUEST);
-        testApplicationError(HttpStatus.UNAUTHORIZED);
-        testApplicationError(HttpStatus.FORBIDDEN);
-        testApplicationError(HttpStatus.NOT_FOUND);
+    void testNonHtmlAcceptRquestIgnored(WireMockRuntimeInfo runtimeInfo) {
+        StubMapping mapping = buildFrom("""
+                {
+                    "priority": 1,
+                    "request": {
+                        "method": "GET",
+                        "url": "/geonetwork",
+                        "headers": {
+                            "Accept": {"contains": "application/json"}
+                        }
+                    },
+                    "response": {
+                        "status": 500,
+                        "body": "Internal server error from downstream",
+                        "headers": {
+                            "Content-Type": "text/plain",
+                            "X-Frame-Options": "ALLOW-FROM *.test.com",
+                            "X-Content-Type-Options": "nosniff",
+                            "Referrer-Policy": "same-origin"
+                        }
+                   }
+                }
+                """);
+        runtimeInfo.getWireMock().register(mapping);
+
+        RequestEntity<Void> req = RequestEntity.get("/geonetwork").header("Accept", "application/json").build();
+        ResponseEntity<String> response = testRestTemplate.exchange(req, String.class);
+
+        verify(factory, times(1)).canFilter(any());
+        verify(factory, never()).decorate(any());
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        Map<String, String> headers = response.getHeaders().toSingleValueMap();
+        Map<String, String> expected = Map.of(//
+                "Content-Type", "text/plain", //
+                "X-Frame-Options", "ALLOW-FROM *.test.com", //
+                "X-Content-Type-Options", "nosniff", //
+                "Referrer-Policy", "same-origin"//
+
+        );
+        assertThat(headers).as("response does not contain all original headers").containsAllEntriesOf(expected);
+        assertThat(response.getBody()).isEqualTo("Internal server error from downstream");
     }
 
     @Test
-    void test5xx() {
-        testApplicationError(HttpStatus.INTERNAL_SERVER_ERROR);
-        testApplicationError(HttpStatus.SERVICE_UNAVAILABLE);
-        testApplicationError(HttpStatus.BAD_GATEWAY);
+    void testApplicationErrorToCustomErrorPageMapping(WireMockRuntimeInfo runtimeInfo) {
+        runtimeInfo.getWireMock().register(buildFrom("""
+                {
+                    "priority": 1,
+                    "request": {
+                        "method": "GET",
+                        "url": "/geonetwork",
+                        "headers": {
+                            "Accept": {"contains": "text/html"}
+                        }
+                    },
+                    "response": {
+                        "status": 500,
+                        "body": "Internal server error from downstream",
+                        "headers": {
+                            "Content-Type": "text/plain",
+                            "X-Frame-Options": "ALLOW-FROM *.test.com",
+                            "X-Content-Type-Options": "nosniff",
+                            "Referrer-Policy": "same-origin"
+                        }
+                   }
+                }
+                """));
+
+        RequestEntity<Void> req = RequestEntity.get("/geonetwork").header("Accept", "text/html").build();
+        ResponseEntity<String> response = testRestTemplate.exchange(req, String.class);
+
+        verify(factory, times(1)).canFilter(any());
+        verify(factory, times(1)).decorate(any());
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(response.getHeaders().getContentType().isCompatibleWith(MediaType.TEXT_HTML))
+                .as("Expected content type text/html").isTrue();
+
+        Map<String, String> headers = response.getHeaders().toSingleValueMap();
+        Map<String, String> expected = Map.of(//
+                "X-Frame-Options", "ALLOW-FROM *.test.com", //
+                "X-Content-Type-Options", "nosniff", //
+                "Referrer-Policy", "same-origin"//
+
+        );
+        assertThat(headers).as("response does not contain all original headers").containsAllEntriesOf(expected);
     }
 
-    private void testApplicationError(HttpStatus status) {
-        GatewayFilterChain chain = mock(GatewayFilterChain.class);
-        filter.filter(exchange, chain);
-        ArgumentCaptor<ServerWebExchange> captor = ArgumentCaptor.forClass(ServerWebExchange.class);
-        verify(chain).filter(captor.capture());
-
-        ServerWebExchange mutated = captor.getValue();
-        ServerHttpResponse response = mutated.getResponse();
-        assertThrows(ResponseStatusException.class, () -> response.setStatusCode(status));
+    private HttpEntity<?> withHeaders(String... headersKvp) {
+        assertThat(headersKvp.length % 2).isZero();
+        HttpHeaders headers = new HttpHeaders();
+        Iterator<String> it = Stream.of(headersKvp).iterator();
+        while (it.hasNext()) {
+            headers.add(it.next(), it.next());
+        }
+        return new HttpEntity<>(headers);
     }
 }

@@ -8,5 +8,6 @@
     <root level="error">
         <appender-ref ref="STDOUT"/>
     </root>
-    <logger name="org.georchestra" level="info"/>
+    <logger name="org.springframework" level="warn"/>
+    <logger name="org.georchestra" level="warn"/>
 </configuration>

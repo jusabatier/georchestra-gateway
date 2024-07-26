@@ -19,10 +19,14 @@
 
 package org.georchestra.gateway.security.accessrules;
 
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
-import lombok.extern.slf4j.Slf4j;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.noContent;
+import static com.github.tomakehurst.wiremock.client.WireMock.ok;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+
+import java.net.URI;
+
 import org.georchestra.gateway.app.GeorchestraGatewayApplication;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -36,9 +40,11 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
-import java.net.URI;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Integration tests for {@link AccessRulesCustomizer} for the access rules in
@@ -271,36 +277,6 @@ class AccessRulesCustomizerIT {
                 .expectStatus().isOk();
 
         testClient.get().uri("/mapstore/any/thing")//
-                .header("Host", "localhost")//
-                .exchange()//
-                .expectStatus().isOk();
-    }
-
-    @Test
-    void testQueryParamAuthentication_forbidden_when_anonymous() {
-        mockService.stubFor(get(urlMatching("/header(.*)?")).willReturn(ok()));
-
-        testClient.get().uri("/header?login")//
-                .exchange()//
-                .expectStatus().is3xxRedirection();
-
-        testClient.get().uri("/header")//
-                .header("Host", "localhost")//
-                .exchange()//
-                .expectStatus().isOk();
-    }
-
-    @Test
-    @WithMockUser(authorities = { "ROLE_USER" })
-    void testQueryParamAuthentication_authorized_if_logged_in() {
-        mockService.stubFor(get(urlMatching("/header(.*)?")).willReturn(ok()));
-
-        testClient.get().uri("/header?login")//
-                .header("Host", "localhost")//
-                .exchange()//
-                .expectStatus().isOk();
-
-        testClient.get().uri("/header")//
                 .header("Host", "localhost")//
                 .exchange()//
                 .expectStatus().isOk();

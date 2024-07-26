@@ -18,9 +18,10 @@
  */
 package org.georchestra.gateway.autoconfigure.app;
 
+import org.georchestra.gateway.filter.global.ApplicationErrorGatewayFilterFactory;
+import org.georchestra.gateway.filter.global.LoginParamRedirectGatewayFilterFactory;
 import org.georchestra.gateway.filter.global.ResolveTargetGlobalFilter;
 import org.georchestra.gateway.filter.headers.HeaderFiltersConfiguration;
-import org.georchestra.gateway.filter.global.ApplicationErrorGatewayFilterFactory;
 import org.georchestra.gateway.model.GatewayConfigProperties;
 import org.georchestra.gateway.model.GeorchestraTargetConfig;
 import org.geoserver.cloud.gateway.filter.RouteProfileGatewayFilterFactory;
@@ -48,6 +49,11 @@ public class FiltersAutoConfiguration {
     @Bean
     ResolveTargetGlobalFilter resolveTargetWebFilter(GatewayConfigProperties config) {
         return new ResolveTargetGlobalFilter(config);
+    }
+
+    @Bean
+    LoginParamRedirectGatewayFilterFactory loginParamRedirectGatewayFilterFactory() {
+        return new LoginParamRedirectGatewayFilterFactory();
     }
 
     /**

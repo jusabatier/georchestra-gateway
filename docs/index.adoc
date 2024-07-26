@@ -51,43 +51,7 @@ flowchart TB
     proxy_filter-->proxied
 ----
 
-**RemoveSecurityHeadersGatewayFilter** removes any incoming `sec-\*` request header to
-prevent impersonation. Valid `sec-*` headers ought to be computed by the filter chain
-and appended to proxied requests.
-
-**ResolveTargetGlobalFilter** resolves the `GeorchestraTargetConfig`
-for the request's matched `Route` and stores as a `ServerWebExchange` attribute.
-`GeorchestraTargetConfig` contains the target service's security header requirements
-and the set of role-based access rules to different service endpoints.
-
-**ResolveGeorchestraUserGlobalFilter** resolves the `GeorchestraUser` from the
-request's `Authentication` so it can be retrieved down the chain during a server
-web exchange filter chain execution.
-The resolved per-request `GeorchestraUser` object can then, for
-example, be used to append the necessary `sec-*` headers that relate
-to user information to proxied http requests.
-
-**AddSecHeadersGatewayFilter** adds all necessary `sec-*` request  headers to proxied requests.
-Delegates to the `HeaderContributor` extension point to prepare the exact set of headers to append
-to each request.
-
-Implementations can use the resolved `GeorchestraTargetConfig` and `GeorchestraUser` to compute 
-the target service required header names and values.
-
-[source,mermaid]
-----
-classDiagram
-  direction LR
-  HeaderContributor <|-- GeorchestraUserHeadersContributor
-  HeaderContributor <|-- GeorchestraOrganizationHeadersContributor
-  HeaderContributor <|-- JsonPayloadHeadersContributor
-  HeaderContributor <|-- SecProxyHeaderContributor
-  class HeaderContributor{
-    <<interface>>
-    prepare(ServerWebExchange exchange) Consumer~HttpHeaders~
-  }
-----
-
+Refer to xref:custom-filters.adoc[geOrchestra Gateway custom filters] for more information.
 
 == Data directory property sources
 

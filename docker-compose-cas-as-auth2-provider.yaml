@@ -57,7 +57,7 @@ services:
       - ldap
       - database
     volumes:
-      - datadir:/etc/georchestra
+      - ./datadir:/etc/georchestra
     environment:
       - JAVA_TOOL_OPTIONS=-Dgeorchestra.datadir=/etc/georchestra -Dspring.profiles.active=docker,casoauth2rabbitmq -Xmx512M -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=0.0.0.0:5005
     restart: always
@@ -68,7 +68,7 @@ services:
   header:
     image: georchestra/header:latest
     volumes:
-      - datadir:/etc/georchestra
+      - ./datadir:/etc/georchestra
     environment:
       - JAVA_OPTIONS=-Dorg.eclipse.jetty.annotations.AnnotationParser.LEVEL=OFF
       - XMS=256M
@@ -97,7 +97,7 @@ services:
       - ldap
       - database
     volumes:
-      - datadir:/etc/georchestra
+      - ./datadir:/etc/georchestra
     environment:
       - JAVA_OPTIONS=-Dorg.eclipse.jetty.annotations.AnnotationParser.LEVEL=OFF
       - XMS=256M
@@ -111,7 +111,7 @@ services:
     depends_on:
       - ldap2
     volumes:
-      - datadir:/etc/georchestra
+      - ./datadir:/etc/georchestra
     environment:
       - JAVA_OPTIONS=-Dorg.eclipse.jetty.annotations.AnnotationParser.LEVEL=OFF
       - XMS=256M

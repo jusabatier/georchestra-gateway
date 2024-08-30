@@ -66,33 +66,6 @@
         <version>${georchestra.version}</version>
         <scope>test</scope>
       </dependency>
-      <!--spring-security-oauth2 dependencies version forced to 5.6.2
-          since later version have issues when extracting users information
-          from token
-          Set<String> defaultScopes(OAuth2RefreshTokenGrantRequest grantRequest) {
-              return grantRequest.getAccessToken().getScopes();
-          }
-          changed to
-          Set<String> defaultScopes(T grantRequest) {
-              return Collections.emptySet();
-          }
-          which causes issues.
-      -->
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-oauth2-client</artifactId>
-        <version>5.6.9</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-oauth2-core</artifactId>
-        <version>5.6.2</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework.security</groupId>
-        <artifactId>spring-security-oauth2-jose</artifactId>
-        <version>5.6.2</version>
-      </dependency>
       <dependency>
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok</artifactId>

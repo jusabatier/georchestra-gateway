@@ -6,21 +6,26 @@ import org.georchestra.ds.users.Account;
 import org.georchestra.ds.users.AccountDao;
 import org.georchestra.gateway.accounts.admin.AccountCreated;
 import org.georchestra.gateway.accounts.events.rabbitmq.RabbitmqAccountCreatedEventSender;
+import org.georchestra.gateway.accounts.events.rabbitmq.RabbitmqEventsListener;
 import org.georchestra.gateway.app.GeorchestraGatewayApplication;
 import org.georchestra.security.model.GeorchestraUser;
 import org.georchestra.testcontainers.console.GeorchestraConsoleContainer;
 import org.georchestra.testcontainers.ldap.GeorchestraLdapContainer;
+import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.amqp.core.Message;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.ldap.NameNotFoundException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -53,6 +58,8 @@ public class SendMessageRabbitmqIT {
     private @Autowired RabbitmqAccountCreatedEventSender sender;
     private @Autowired AccountDao accountDao;
     private @Autowired OrgsDao orgsDao;
+
+    private @Autowired RabbitmqEventsListener eventsListener;
 
     private static final int smtpPort = 25;
 
@@ -118,13 +125,8 @@ public class SendMessageRabbitmqIT {
         user.setOAuth2Uid("123");
         eventPublisher.publishEvent(new AccountCreated(user));
         await().atMost(30, TimeUnit.SECONDS).until(() -> {
-            Account testAmqp;
-            try {
-                testAmqp = accountDao.findByUID("testamqp");
-            } catch (NameNotFoundException e) {
-                return false;
-            }
-            return testAmqp != null;
+            return (RabbitmqEventsListener.getSynReceivedMessageUid().size() > 0);
         });
     }
+
 }

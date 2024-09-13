@@ -122,7 +122,7 @@ public class GeorchestraGatewayApplication {
             });
         }
 
-        if (oauth2LoginLinks.size() == 1) {
+        if (oauth2LoginLinks.size() == 1 && !ldapEnabled ) {
             return "redirect:"+oauth2LoginLinks.keySet().stream().findFirst().get();
         }
         

@@ -7,7 +7,7 @@ The gateway belongs to geOrchestra core, since it is the component which:
 * handles user sessions
 * routes requests to webapps
 
-The behavior is controlled by the files from the `<datadir_root>/gateway` folder, which can be found https://github.com/georchestra/datadir/tree/master/datadir[here]
+The behavior is controlled by the files from the `<datadir_root>/gateway` folder, which can be found https://github.com/georchestra/datadir/tree/master/gateway[here]
 
 == How-to integrate a new application in geOrchestra ?
 

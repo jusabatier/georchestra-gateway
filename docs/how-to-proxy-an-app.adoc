@@ -15,7 +15,7 @@ The goal here is to benefit from the https://en.wikipedia.org/wiki/Single_sign-o
 
 === Ready to launch example
 
-Here https://github.com/georchestra/sample-docker-composition/tree/main/gateway/new-app[is a ready-to-launch example of a secured application] behind the gateway.
+Here ia a https://github.com/georchestra/sample-docker-composition/tree/main/gateway/new-app[ready-to-launch example of a secured application] behind the gateway.
 
 === Gateway configuration
 
@@ -110,7 +110,7 @@ It is also possible to create a specific role in the console app which grants ac
 
 ==== How it works
 
-With every request, the proxy adds specific HTTP headers, allowing the application to know:
+With every request, the geOrchestra gateway adds specific HTTP headers, allowing the application to know:
 
 * if the request comes from a registered user, or an anonymous one - this is `sec-username` (not provided if anonymous).
 * which roles the user holds - `sec-roles` is a semi-colon separated list of roles (not provided if anonymous).

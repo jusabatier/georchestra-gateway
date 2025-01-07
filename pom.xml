@@ -13,6 +13,13 @@
   <version>${revision}</version>
   <packaging>pom</packaging>
   <name>gateway-root</name>
+  <distributionManagement>
+   <repository>
+      <id>geOrchestra-artifactory</id>
+      <name>geOrchestra Maven repository</name>
+      <url>https://artifactory.georchestra.org/artifactory/georchestra/</url>
+    </repository>
+  </distributionManagement>
   <modules>
     <module>gateway</module>
   </modules>

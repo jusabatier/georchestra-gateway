@@ -84,7 +84,7 @@ jobs:
         docker tag georchestra/gateway:latest ghcr.io/georchestra/georchestra-gateway/gateway:commit-${{ github.sha }}
         docker push ghcr.io/georchestra/georchestra-gateway/gateway:commit-${{ github.sha }}
         
-    - name: "Publish binaire in artifactory"
+    - name: "Publish binaries in artifactory"
         run: ./mvnw deploy -Dmaven.test.skip=true
         continue-on-error: true
         env:

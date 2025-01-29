@@ -107,16 +107,11 @@ georchestra:
           users:
             rdn: ${ldapUsersRdn:ou=users}
             searchFilter: ${ldapUserSearchFilter:(uid={0})}
-            pendingUsersSearchBaseDN: ou=pendingusers
-            protectedUsers: geoserver_privileged_user
           roles:
             rdn: ${ldapRolesRdn:ou=roles}
             searchFilter: ${ldapRolesSearchFilter:(member={0})}
-            protectedRoles: ADMINISTRATOR, EXTRACTORAPP, GN_.*, ORGADMIN, REFERENT, USER, SUPERUSER
           orgs:
             rdn: ${ldapOrgsRdn:ou=orgs}
-            orgTypes: Association,Company,NGO,Individual,Other
-            pendingOrgSearchBaseDN: ou=pendingorgs
 
 management:
   server:
@@ -141,9 +136,8 @@ management:
       show-details: always
   metrics:
     binders:
-      processor.enabled: true
-      uptime.enabled: true
-      jvm.enabled: true
+      process.enabled: true
+      start.time: true
     enable.all: true
     enable.jvm: true
     export:

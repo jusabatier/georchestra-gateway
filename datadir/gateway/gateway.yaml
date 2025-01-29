@@ -137,6 +137,11 @@ georchestra:
         access-rules:
         - intercept-url: /import/**
           anonymous: false
+      echo: 
+        target: http://echo:80/
+        access-rules:
+        - intercept-url: /import/**
+          anonymous: true
 
 ---
 # docker profile, sets backend services target URLs to match default docker-compose host names and ports
@@ -155,6 +160,7 @@ georchestra.gateway.services:
   import.target: http://import:80/
   mapfishapp.target: http://mapfishapp:8080/mapfishapp/
   mapstore.target: http://mapstore:8080/mapstore/
+  echo.target: http://echo:80
 
 ---
 spring.config.activate.on-profile: dev
@@ -182,3 +188,4 @@ georchestra.gateway.services:
   import.target: http://localhost:10012/
   atlas.target: http://localhost:8080/atlas/
   geowebcache.target: http://localhost:8080/geowebcache/
+  echo.target: http://localhost:10009

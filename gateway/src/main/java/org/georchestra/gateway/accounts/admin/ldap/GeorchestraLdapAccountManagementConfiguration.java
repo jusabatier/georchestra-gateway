@@ -41,10 +41,34 @@ import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.ldap.pool.factory.PoolingContextSource;
 import org.springframework.ldap.pool.validation.DefaultDirContextValidator;
 
+/**
+ * Spring Boot configuration class for geOrchestra's LDAP-based account
+ * management.
+ * <p>
+ * This class defines beans for managing LDAP user accounts, roles, and
+ * organizations using Spring LDAP and pooled connections.
+ * </p>
+ * <p>
+ * The configuration is driven by properties defined in
+ * {@link GeorchestraGatewaySecurityConfigProperties}.
+ * </p>
+ */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(GeorchestraGatewaySecurityConfigProperties.class)
 public class GeorchestraLdapAccountManagementConfiguration {
 
+    /**
+     * Defines the primary {@link AccountManager} bean using LDAP as the backend.
+     *
+     * @param eventPublisher         the event publisher for account-related events
+     * @param accountDao             the DAO for managing user accounts in LDAP
+     * @param roleDao                the DAO for managing roles in LDAP
+     * @param orgsDao                the DAO for managing organizations in LDAP
+     * @param demultiplexingUsersApi API for resolving users based on OAuth2
+     *                               credentials
+     * @param configProperties       the security configuration properties
+     * @return an instance of {@link LdapAccountsManager}
+     */
     @Bean
     AccountManager ldapAccountsManager(//
             ApplicationEventPublisher eventPublisher, //
@@ -53,16 +77,29 @@ public class GeorchestraLdapAccountManagementConfiguration {
             OrgsDao orgsDao, //
             DemultiplexingUsersApi demultiplexingUsersApi,
             GeorchestraGatewaySecurityConfigProperties configProperties) {
-
         return new LdapAccountsManager(eventPublisher::publishEvent, accountDao, roleDao, orgsDao,
                 demultiplexingUsersApi, configProperties);
     }
 
+    /**
+     * Registers a {@link CreateAccountUserCustomizer} bean to handle automatic
+     * account creation when a user logs in via trusted authentication mechanisms.
+     *
+     * @param accountManager the account manager responsible for user retrieval and
+     *                       creation
+     * @return a {@link CreateAccountUserCustomizer} instance
+     */
     @Bean
     CreateAccountUserCustomizer createAccountUserCustomizer(AccountManager accountManager) {
         return new CreateAccountUserCustomizer(accountManager);
     }
 
+    /**
+     * Creates an LDAP context source for connecting to a single LDAP directory.
+     *
+     * @param config the LDAP configuration properties
+     * @return a configured {@link LdapContextSource} instance
+     */
     @Bean
     LdapContextSource singleContextSource(GeorchestraGatewaySecurityConfigProperties config) {
         ExtendedLdapConfig ldapConfig = config.extendedEnabled().get(0);
@@ -74,6 +111,12 @@ public class GeorchestraLdapAccountManagementConfiguration {
         return singleContextSource;
     }
 
+    /**
+     * Configures a pooling LDAP context source to optimize connection management.
+     *
+     * @param singleContextSource the base LDAP context source
+     * @return a {@link PoolingContextSource} with connection pooling enabled
+     */
     @Bean
     PoolingContextSource contextSource(LdapContextSource singleContextSource) {
         PoolingContextSource contextSource = new PoolingContextSource();
@@ -88,11 +131,24 @@ public class GeorchestraLdapAccountManagementConfiguration {
         return contextSource;
     }
 
+    /**
+     * Creates an {@link LdapTemplate} for interacting with LDAP.
+     *
+     * @param contextSource the pooled LDAP context source
+     * @return an initialized {@link LdapTemplate}
+     */
     @Bean
-    LdapTemplate ldapTemplate(PoolingContextSource contextSource) throws Exception {
+    LdapTemplate ldapTemplate(PoolingContextSource contextSource) {
         return new LdapTemplate(contextSource);
     }
 
+    /**
+     * Creates a {@link RoleDao} implementation for managing LDAP roles.
+     *
+     * @param ldapTemplate the LDAP template for querying LDAP
+     * @param config       the security configuration properties
+     * @return a configured {@link RoleDaoImpl}
+     */
     @Bean
     RoleDao roleDao(LdapTemplate ldapTemplate, GeorchestraGatewaySecurityConfigProperties config) {
         RoleDaoImpl impl = new RoleDaoImpl();
@@ -101,6 +157,13 @@ public class GeorchestraLdapAccountManagementConfiguration {
         return impl;
     }
 
+    /**
+     * Creates an {@link OrgsDao} implementation for managing LDAP organizations.
+     *
+     * @param ldapTemplate the LDAP template for querying LDAP
+     * @param config       the security configuration properties
+     * @return a configured {@link OrgsDaoImpl}
+     */
     @Bean
     OrgsDao orgsDao(LdapTemplate ldapTemplate, GeorchestraGatewaySecurityConfigProperties config) {
         OrgsDaoImpl impl = new OrgsDaoImpl();
@@ -112,35 +175,33 @@ public class GeorchestraLdapAccountManagementConfiguration {
         return impl;
     }
 
+    /**
+     * Creates an {@link AccountDao} implementation for managing user accounts in
+     * LDAP.
+     *
+     * @param ldapTemplate the LDAP template for querying LDAP
+     * @param config       the security configuration properties
+     * @return a configured {@link AccountDaoImpl}
+     */
     @Bean
     AccountDao accountDao(LdapTemplate ldapTemplate, GeorchestraGatewaySecurityConfigProperties config) {
         ExtendedLdapConfig ldapConfig = config.extendedEnabled().get(0);
-        String baseDn = ldapConfig.getBaseDn();
-        String userSearchBaseDN = ldapConfig.getUsersRdn();
-        String roleSearchBaseDN = ldapConfig.getRolesRdn();
-
-        // we don't need a configuration property for this,
-        // we don't allow pending users to log in. The LdapAuthenticationProvider won't
-        // even look them up.
-        final String pendingUsersSearchBaseDN = "ou=pendingusers";
-
         AccountDaoImpl impl = new AccountDaoImpl(ldapTemplate);
-        impl.setBasePath(baseDn);
-        impl.setUserSearchBaseDN(userSearchBaseDN);
-        impl.setRoleSearchBaseDN(roleSearchBaseDN);
-        impl.setPendingUserSearchBaseDN(pendingUsersSearchBaseDN);
-
-        String orgSearchBaseDN = ldapConfig.getOrgsRdn();
-        requireNonNull(orgSearchBaseDN);
-        impl.setOrgSearchBaseDN(orgSearchBaseDN);
-
-        final String pendingOrgSearchBaseDN = "ou=pendingorgs";
-        impl.setPendingOrgSearchBaseDN(pendingOrgSearchBaseDN);
-
+        impl.setBasePath(ldapConfig.getBaseDn());
+        impl.setUserSearchBaseDN(ldapConfig.getUsersRdn());
+        impl.setRoleSearchBaseDN(ldapConfig.getRolesRdn());
+        impl.setPendingUserSearchBaseDN("ou=pendingusers");
+        impl.setOrgSearchBaseDN(requireNonNull(ldapConfig.getOrgsRdn()));
+        impl.setPendingOrgSearchBaseDN("ou=pendingorgs");
         impl.init();
         return impl;
     }
 
+    /**
+     * Defines role protection rules for preventing modification of critical roles.
+     *
+     * @return a {@link RoleProtected} instance with predefined protected roles
+     */
     @Bean
     RoleProtected roleProtected() {
         RoleProtected roleProtected = new RoleProtected();

@@ -36,43 +36,72 @@ import org.springframework.security.ldap.userdetails.Person;
 import lombok.RequiredArgsConstructor;
 
 /**
- * {@link GeorchestraUserMapperExtension} that maps generic LDAP-authenticated
- * token to {@link GeorchestraUser} by calling
- * {@link UsersApi#findByUsername(String)}, with the authentication token's
- * principal name as argument.
+ * Maps a generic LDAP-authenticated {@link Authentication} token to a
+ * {@link GeorchestraUser}.
+ * <p>
+ * This implementation extracts user details from an
+ * {@link LdapUserDetails}-based authentication and maps them to a
+ * {@link GeorchestraUser}. It retrieves:
+ * <ul>
+ * <li>Username from {@link LdapUserDetails#getUsername()}</li>
+ * <li>Roles from {@link Authentication#getAuthorities()}</li>
+ * <li>Additional attributes (first name, telephone, description) if available
+ * from a {@link Person} instance.</li>
+ * </ul>
+ * </p>
+ * 
+ * <p>
+ * This mapper does <b>not</b> interact with {@link UsersApi}, unlike other
+ * implementations.
+ * </p>
  */
 @RequiredArgsConstructor
 public class BasicLdapAuthenticatedUserMapper implements GeorchestraUserMapperExtension {
 
+    /**
+     * Attempts to resolve a {@link GeorchestraUser} from the provided
+     * authentication token.
+     *
+     * @param authToken the authentication token to process
+     * @return an {@link Optional} containing the mapped {@link GeorchestraUser}, or
+     *         empty if the token does not match the expected type
+     */
     @Override
     public Optional<GeorchestraUser> resolve(Authentication authToken) {
-        return Optional.ofNullable(authToken)//
-                .filter(UsernamePasswordAuthenticationToken.class::isInstance)
-                .map(UsernamePasswordAuthenticationToken.class::cast)//
-                .filter(token -> token.getPrincipal() instanceof LdapUserDetails)//
-                .flatMap(this::map);
+        return Optional.ofNullable(authToken).filter(UsernamePasswordAuthenticationToken.class::isInstance)
+                .map(UsernamePasswordAuthenticationToken.class::cast)
+                .filter(token -> token.getPrincipal() instanceof LdapUserDetails).flatMap(this::map);
     }
 
+    /**
+     * Maps an LDAP-authenticated user to a {@link GeorchestraUser}.
+     *
+     * @param token the authentication token containing LDAP user details
+     * @return an {@link Optional} containing the mapped {@link GeorchestraUser}
+     */
     Optional<GeorchestraUser> map(UsernamePasswordAuthenticationToken token) {
-        final LdapUserDetails principal = (LdapUserDetails) token.getPrincipal();
-        final String username = principal.getUsername();
+        LdapUserDetails principal = (LdapUserDetails) token.getPrincipal();
+        String username = principal.getUsername();
         List<String> roles = resolveRoles(token.getAuthorities());
 
         GeorchestraUser user = new GeorchestraUser();
         user.setUsername(username);
-        user.setRoles(new ArrayList<>(roles));//mutable
+        user.setRoles(new ArrayList<>(roles)); // Ensure roles are mutable
 
         if (principal instanceof Person person) {
-            String description = person.getDescription();
-            String givenName = person.getGivenName();
-            String telephoneNumber = person.getTelephoneNumber();
-            user.setNotes(description);
-            user.setFirstName(givenName);
-            user.setTelephoneNumber(telephoneNumber);
+            user.setFirstName(person.getGivenName());
+            user.setTelephoneNumber(person.getTelephoneNumber());
+            user.setNotes(person.getDescription());
         }
         return Optional.of(user);
     }
 
+    /**
+     * Extracts role names from the authentication token's authorities.
+     *
+     * @param authorities the granted authorities assigned to the user
+     * @return a list of role names
+     */
     protected List<String> resolveRoles(Collection<? extends GrantedAuthority> authorities) {
         return authorities.stream().map(GrantedAuthority::getAuthority).toList();
     }

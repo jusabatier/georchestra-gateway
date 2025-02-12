@@ -1,5 +1,3 @@
-package org.georchestra.gateway.security.ldap.extended;
-
 /*
  * Copyright (C) 2022 by the geOrchestra PSC
  *
@@ -18,6 +16,8 @@ package org.georchestra.gateway.security.ldap.extended;
  * You should have received a copy of the GNU General Public License along with
  * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
+
+package org.georchestra.gateway.security.ldap.extended;
 
 import static java.util.Objects.requireNonNull;
 
@@ -57,33 +57,77 @@ import org.springframework.security.ldap.userdetails.LdapUserDetails;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Sets up a {@link GeorchestraUserMapperExtension} that knows how to map an
- * authentication credentials given by a
- * {@link GeorchestraUserNamePasswordAuthenticationToken} with an
- * {@link LdapUserDetails} (i.e., if the user authenticated with LDAP), to a
- * {@link GeorchestraUser}, making use of geOrchestra's
- * {@literal georchestra-ldap-account-management} module's {@link UsersApi}.
+ * Configures authentication against an extended LDAP directory, supporting
+ * geOrchestra-specific attributes such as organizations and roles.
+ * <p>
+ * This configuration provides a {@link GeorchestraUserMapperExtension} to
+ * transform an authenticated {@link LdapUserDetails} into a
+ * {@link GeorchestraUser}, leveraging geOrchestra's LDAP-based user management
+ * APIs.
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(GeorchestraGatewaySecurityConfigProperties.class)
 @Slf4j(topic = "org.georchestra.gateway.security.ldap.extended")
 public class ExtendedLdapAuthenticationConfiguration {
 
+    /**
+     * Registers a user mapper that resolves LDAP-authenticated users to
+     * {@link GeorchestraUser}.
+     *
+     * @param users The {@link DemultiplexingUsersApi} used to look up users in
+     *              different LDAP directories.
+     * @return A {@link GeorchestraLdapAuthenticatedUserMapper} instance if LDAP
+     *         authentication is enabled; otherwise, returns {@code null}.
+     */
     @Bean
     GeorchestraLdapAuthenticatedUserMapper georchestraLdapAuthenticatedUserMapper(DemultiplexingUsersApi users) {
         return users.getTargetNames().isEmpty() ? null : new GeorchestraLdapAuthenticatedUserMapper(users);
     }
 
+    /**
+     * Retrieves the list of enabled extended LDAP configurations.
+     *
+     * @param config The global security configuration properties.
+     * @return A list of enabled extended LDAP configurations.
+     */
     @Bean
     List<ExtendedLdapConfig> enabledExtendedLdapConfigs(GeorchestraGatewaySecurityConfigProperties config) {
         return config.extendedEnabled();
     }
 
+    /**
+     * Creates authentication providers for each enabled extended LDAP
+     * configuration.
+     *
+     * @param configs A list of enabled extended LDAP configurations.
+     * @return A list of configured {@link GeorchestraLdapAuthenticationProvider}
+     *         instances.
+     */
     @Bean
     List<GeorchestraLdapAuthenticationProvider> extendedLdapAuthenticationProviders(List<ExtendedLdapConfig> configs) {
         return configs.stream().map(this::createLdapProvider).toList();
     }
 
+    /**
+     * Creates a {@link GeorchestraLdapAuthenticationProvider} for the given
+     * {@link ExtendedLdapConfig} by setting up the necessary LDAP authentication
+     * and authorization mechanisms.
+     * <p>
+     * This method initializes an {@link LdapTemplate} and an {@link AccountDao}
+     * based on the given LDAP configuration. It then builds an
+     * {@link ExtendedLdapAuthenticationProvider} using an
+     * {@link LdapAuthenticatorProviderBuilder}, setting up the authentication
+     * provider with user and role search filters, as well as optional admin
+     * credentials if provided.
+     * </p>
+     *
+     * @param config The {@link ExtendedLdapConfig} defining the LDAP connection
+     *               details and search configurations.
+     * @return A configured {@link GeorchestraLdapAuthenticationProvider} for
+     *         handling authentication against the specified LDAP server.
+     * @throws IllegalStateException if an error occurs while creating the LDAP
+     *                               authentication provider.
+     */
     private GeorchestraLdapAuthenticationProvider createLdapProvider(ExtendedLdapConfig config) {
         log.info("Creating extended LDAP AuthenticationProvider {} at {}", config.getName(), config.getUrl());
 
@@ -103,10 +147,17 @@ public class ExtendedLdapAuthenticationConfiguration {
                     .returningAttributes(config.getReturningAttributes()).accountDao(accountsDao).build();
             return new GeorchestraLdapAuthenticationProvider(config.getName(), delegate);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
     }
 
+    /**
+     * Registers a {@link DemultiplexingUsersApi} that routes user API calls to the
+     * appropriate LDAP instance based on configuration.
+     *
+     * @param configs The list of extended LDAP configurations.
+     * @return A {@link DemultiplexingUsersApi} instance.
+     */
     @Bean
     DemultiplexingUsersApi demultiplexingUsersApi(List<ExtendedLdapConfig> configs) {
         Map<String, UsersApi> usersByConfigName = new HashMap<>();
@@ -132,7 +183,7 @@ public class ExtendedLdapAuthenticationConfiguration {
     //////////////////////////////////////////////
 
     private OrganizationsApi createOrgsApi(ExtendedLdapConfig ldapConfig, LdapTemplate ldapTemplate,
-            AccountDao accountsDao) throws Exception {
+            AccountDao accountsDao) {
         OrganizationsApiImpl impl = new OrganizationsApiImpl();
         OrgsDaoImpl orgsDao = new OrgsDaoImpl();
         orgsDao.setLdapTemplate(ldapTemplate);
@@ -145,12 +196,11 @@ public class ExtendedLdapAuthenticationConfiguration {
         return impl;
     }
 
-    private UsersApi createUsersApi(ExtendedLdapConfig ldapConfig, LdapTemplate ldapTemplate, AccountDao accountsDao)
-            throws Exception {
+    private UsersApi createUsersApi(ExtendedLdapConfig ldapConfig, LdapTemplate ldapTemplate, AccountDao accountsDao) {
         final RoleDao roleDao = roleDao(ldapTemplate, ldapConfig, accountsDao);
 
         final UserMapper ldapUserMapper = createUserMapper(roleDao);
-        UserRule userRule = ldapUserRule(ldapConfig);
+        UserRule userRule = ldapUserRule();
 
         UsersApiImpl impl = new UsersApiImpl();
         impl.setAccountsDao(accountsDao);
@@ -190,9 +240,7 @@ public class ExtendedLdapAuthenticationConfiguration {
         impl.setBasePath(baseDn);
         impl.setUserSearchBaseDN(userSearchBaseDN);
         impl.setRoleSearchBaseDN(roleSearchBaseDN);
-        if (pendingUsersSearchBaseDN != null) {
-            impl.setPendingUserSearchBaseDN(pendingUsersSearchBaseDN);
-        }
+        impl.setPendingUserSearchBaseDN(pendingUsersSearchBaseDN);
 
         String orgSearchBaseDN = ldapConfig.getOrgsRdn();
         requireNonNull(orgSearchBaseDN);
@@ -213,7 +261,7 @@ public class ExtendedLdapAuthenticationConfiguration {
         impl.setLdapTemplate(ldapTemplate);
         impl.setRoleSearchBaseDN(rolesRdn);
         impl.setAccountDao(accountDao);
-        impl.setRoles(ldapProtectedRoles(ldapConfig));
+        impl.setRoles(ldapProtectedRoles());
         return impl;
     }
 
@@ -225,17 +273,11 @@ public class ExtendedLdapAuthenticationConfiguration {
         impl.setOrgSearchBaseDN(ldapConfig.getOrgs().getRdn());
 
         final String pendingOrgSearchBaseDN = "ou=pendingorgs";
-
-        // not needed here, only console cares, we shouldn't allow to authenticate
-        // pending users, should we?
         impl.setPendingOrgSearchBaseDN(pendingOrgSearchBaseDN);
-        // not needed here, only console's OrgsController cares about this, right?
-        // final String orgTypes = "Association,Company,NGO,Individual,Other";
-        // impl.setOrgTypeValues(orgTypes);
         return impl;
     }
 
-    private UserRule ldapUserRule(ExtendedLdapConfig ldapConfig) {
+    private UserRule ldapUserRule() {
         // we can't possibly try to delete a protected user, so no need to configure
         // them
         List<String> protectedUsers = Collections.emptyList();
@@ -244,7 +286,7 @@ public class ExtendedLdapAuthenticationConfiguration {
         return rule;
     }
 
-    private RoleProtected ldapProtectedRoles(ExtendedLdapConfig ldapConfig) {
+    private RoleProtected ldapProtectedRoles() {
         // protected roles are used by the console service to avoid deleting them. This
         // application will never try to do so, so we don't care about configuring them
         List<String> protectedRoles = List.of();

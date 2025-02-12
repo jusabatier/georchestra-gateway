@@ -22,14 +22,27 @@ import javax.annotation.PostConstruct;
 
 import org.georchestra.gateway.security.ldap.LdapAuthenticationConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link EnableAutoConfiguration AutoConfiguration} to set up LDAP security
- * 
+ * Auto-configuration for LDAP-based authentication in geOrchestra.
+ * <p>
+ * This configuration enables LDAP authentication when at least one LDAP data
+ * source is enabled and the required dependencies are available.
+ * </p>
+ *
+ * <p>
+ * It imports {@link LdapAuthenticationConfiguration}, which sets up the
+ * necessary beans for LDAP authentication.
+ * </p>
+ *
+ * <p>
+ * Upon initialization, this configuration logs a message indicating that LDAP
+ * authentication has been enabled.
+ * </p>
+ *
  * @see LdapAuthenticationConfiguration
  */
 @AutoConfiguration
@@ -38,7 +51,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j(topic = "org.georchestra.gateway.autoconfigure.security")
 public class LdapSecurityAutoConfiguration {
 
-    public @PostConstruct void log() {
+    /**
+     * Logs a message when LDAP security is enabled.
+     */
+    @PostConstruct
+    public void log() {
         log.info("georchestra LDAP security enabled");
     }
 }

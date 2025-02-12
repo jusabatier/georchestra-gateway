@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License along with
  * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.georchestra.gateway.security;
 
 import java.util.Optional;
@@ -26,24 +25,55 @@ import org.springframework.core.Ordered;
 import org.springframework.security.core.Authentication;
 
 /**
- * Extension point to decouple the authentication origin from the logic to
- * convey geOrchestra-specific HTTP security request headers to back-end
- * services.
+ * Defines an extension point for mapping authentication tokens to
+ * {@link GeorchestraUser} instances.
  * <p>
- * Beans of this type will be asked by {@link GeorchestraUserMapper} to obtain a
- * {@link GeorchestraUser} from the current request authentication token. An
- * instance that knows how to perform such mapping based on the kind of
- * authentication represented by the token shall return a non-empty user.
+ * This interface allows different authentication mechanisms (e.g., LDAP,
+ * OAuth2, OpenID Connect) to provide their own strategy for extracting user
+ * details from an {@link Authentication} token.
+ * </p>
+ * <p>
+ * Implementations of this interface are queried by
+ * {@link GeorchestraUserMapper} to determine whether they can handle the given
+ * authentication token. If a suitable implementation is found, it returns a
+ * non-empty {@link GeorchestraUser}.
+ * </p>
+ * 
+ * <p>
+ * Beans of this type are {@link Ordered}, meaning multiple resolvers can be
+ * defined with explicit ordering to prioritize certain authentication sources
+ * over others.
+ * </p>
+ * 
+ * @see GeorchestraUserMapper
  */
 public interface GeorchestraUserMapperExtension extends Ordered {
 
     /**
-     * @return the mapped {@link GeorchestraUser} based on the provided auth token,
-     *         or {@link Optional#empty()} if this instance can't perform such
-     *         mapping.
+     * Attempts to map an {@link Authentication} token to a {@link GeorchestraUser}.
+     * <p>
+     * If this implementation can extract user details from the provided
+     * authentication token, it should return a populated {@link GeorchestraUser}.
+     * Otherwise, it should return {@link Optional#empty()} to allow other resolvers
+     * to handle the token.
+     * </p>
+     * 
+     * @param authToken the authentication token representing the user's credentials
+     * @return an optional {@link GeorchestraUser} if this resolver can handle the
+     *         authentication token
      */
     Optional<GeorchestraUser> resolve(Authentication authToken);
 
+    /**
+     * Defines the order in which this resolver should be executed relative to other
+     * {@link GeorchestraUserMapperExtension} implementations.
+     * <p>
+     * A lower value indicates higher priority.
+     * </p>
+     * 
+     * @return {@code 0} as the default order. Implementations can override this if
+     *         needed.
+     */
     default int getOrder() {
         return 0;
     }

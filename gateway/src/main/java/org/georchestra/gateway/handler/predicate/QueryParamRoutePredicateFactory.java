@@ -30,62 +30,98 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.server.ServerWebExchange;
 
 /**
- * URI predicate filter based on the existence of a given query parameter
+ * A route predicate factory that evaluates whether an HTTP request contains a
+ * specified query parameter.
  * <p>
- * Usage:
+ * This predicate allows routing based on the presence of a query parameter in
+ * the request URI.
+ * </p>
+ * <p>
+ * Usage example:
+ * </p>
  * 
  * <pre>
- *  
- * {@code
- * - id: <routeid>
- *   uri: <targeturi>
+ * <code>
+ * - id: example-route
+ *   uri: http://example.com
  *   predicates:
- *    - QueryParam=<param name>
- * }
+ *    - QueryParam=token
+ * </code>
  * </pre>
+ * <p>
+ * The above configuration will route requests to {@code http://example.com}
+ * only if the query string contains the parameter {@code token}.
+ * </p>
  */
 public class QueryParamRoutePredicateFactory
         extends AbstractRoutePredicateFactory<QueryParamRoutePredicateFactory.Config> {
 
     public static final String PARAM_KEY = "param";
 
+    /**
+     * Constructs a new {@code QueryParamRoutePredicateFactory}.
+     */
     public QueryParamRoutePredicateFactory() {
         super(QueryParamRoutePredicateFactory.Config.class);
     }
 
+    /**
+     * Specifies the order of the fields when using the shortcut configuration.
+     * 
+     * @return a list containing the expected field order
+     */
     @Override
     public List<String> shortcutFieldOrder() {
         return Arrays.asList(PARAM_KEY);
     }
 
+    /**
+     * Applies the predicate filter to check for the presence of the configured
+     * query parameter in the request.
+     * 
+     * @param config the predicate configuration containing the query parameter name
+     * @return a {@link Predicate} that tests whether the request contains the
+     *         specified query parameter
+     */
     @Override
     public Predicate<ServerWebExchange> apply(QueryParamRoutePredicateFactory.Config config) {
         return new GatewayPredicate() {
             @Override
             public boolean test(ServerWebExchange exchange) {
-                String param = config.param;
-                if (exchange.getRequest().getQueryParams().containsKey(param)) {
-                    return true;
-                }
-                return false;
+                return exchange.getRequest().getQueryParams().containsKey(config.param);
             }
 
-            public @Override String toString() {
+            @Override
+            public String toString() {
                 return String.format("Query: param=%s", config.getParam());
             }
         };
     }
 
+    /**
+     * Configuration class for {@code QueryParamRoutePredicateFactory}.
+     */
     @Validated
     public static class Config {
 
         @NotEmpty
         private String param;
 
+        /**
+         * Retrieves the configured query parameter name.
+         * 
+         * @return the name of the query parameter
+         */
         public String getParam() {
             return param;
         }
 
+        /**
+         * Sets the query parameter name to check for.
+         * 
+         * @param param the query parameter name
+         * @return this {@code Config} instance for method chaining
+         */
         public QueryParamRoutePredicateFactory.Config setParam(String param) {
             this.param = param;
             return this;

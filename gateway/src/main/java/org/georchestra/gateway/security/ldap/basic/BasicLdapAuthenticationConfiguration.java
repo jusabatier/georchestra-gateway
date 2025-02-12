@@ -21,45 +21,45 @@ package org.georchestra.gateway.security.ldap.basic;
 import java.util.List;
 
 import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties;
-import org.georchestra.gateway.security.ServerHttpSecurityCustomizer;
 import org.georchestra.gateway.security.ldap.extended.ExtendedLdapAuthenticationConfiguration;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.ldap.authentication.LdapAuthenticationProvider;
 import org.springframework.security.ldap.userdetails.LdapUserDetails;
 
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link ServerHttpSecurityCustomizer} to enable LDAP based authentication and
- * authorization across multiple LDAP databases.
+ * Configures LDAP-based authentication and authorization for geOrchestra
+ * Gateway.
  * <p>
- * This configuration sets up the required beans for spring-based LDAP
- * authentication and authorization, using
- * {@link GeorchestraGatewaySecurityConfigProperties} to get the
- * {@link GeorchestraGatewaySecurityConfigProperties#getUrl() connection URL}
- * and the {@link GeorchestraGatewaySecurityConfigProperties#getBaseDn() base
- * DN}.
+ * This configuration:
+ * <ul>
+ * <li>Loads LDAP server configurations from
+ * {@link GeorchestraGatewaySecurityConfigProperties}.</li>
+ * <li>Registers {@link BasicLdapAuthenticationProvider} instances for each
+ * enabled LDAP server.</li>
+ * <li>Provides a {@link BasicLdapAuthenticatedUserMapper} to convert LDAP
+ * authentication data into a geOrchestra user.</li>
+ * </ul>
+ * </p>
  * <p>
- * As a result, the {@link ServerHttpSecurity} will have HTTP-Basic
- * authentication enabled and {@link ServerHttpSecurity#formLogin() form login}
- * set up.
+ * Authenticated users will have:
+ * <ul>
+ * <li>An {@link LdapUserDetails} principal extracted from their LDAP
+ * authentication.</li>
+ * <li>Roles assigned based on the LDAP group mappings.</li>
+ * <li>A security context populated with an {@link Authentication} object.</li>
+ * </ul>
+ * </p>
  * <p>
- * Upon successful authentication, the corresponding {@link Authentication} with
- * an {@link LdapUserDetails} as {@link Authentication#getPrincipal() principal}
- * and the roles extracted from LDAP as {@link Authentication#getAuthorities()
- * authorities}, will be set as the security context's
- * {@link SecurityContext#getAuthentication() authentication} property.
- * <p>
- * Note however, this may not be enough information to convey
- * geOrchestra-specific HTTP request headers to backend services, depending on
- * the matching gateway-route configuration. See
- * {@link ExtendedLdapAuthenticationConfiguration} for further details.
+ * This configuration primarily supports standard LDAP authentication. For
+ * geOrchestra-specific LDAP features (e.g., organizations, additional
+ * attributes), refer to {@link ExtendedLdapAuthenticationConfiguration}.
+ * </p>
  * 
  * @see ExtendedLdapAuthenticationConfiguration
  * @see GeorchestraGatewaySecurityConfigProperties
@@ -69,39 +69,63 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j(topic = "org.georchestra.gateway.security.ldap.basic")
 public class BasicLdapAuthenticationConfiguration {
 
+    /**
+     * Provides an LDAP user mapper for basic authentication configurations.
+     *
+     * @param enabledConfigs the list of enabled simple LDAP configurations
+     * @return a {@link BasicLdapAuthenticatedUserMapper} instance or {@code null}
+     *         if no LDAP configurations are enabled
+     */
     @Bean
     BasicLdapAuthenticatedUserMapper ldapAuthenticatedUserMapper(List<LdapServerConfig> enabledConfigs) {
         return enabledConfigs.isEmpty() ? null : new BasicLdapAuthenticatedUserMapper();
     }
 
+    /**
+     * Retrieves the list of enabled simple (non-extended) LDAP configurations.
+     *
+     * @param config the security configuration properties
+     * @return a list of enabled {@link LdapServerConfig} instances
+     */
     @Bean
     List<LdapServerConfig> enabledSimpleLdapConfigs(GeorchestraGatewaySecurityConfigProperties config) {
         return config.simpleEnabled();
     }
 
+    /**
+     * Creates a list of LDAP authentication providers based on the enabled LDAP
+     * configurations.
+     *
+     * @param configs the list of enabled LDAP configurations
+     * @return a list of {@link BasicLdapAuthenticationProvider} instances
+     */
     @Bean
     List<BasicLdapAuthenticationProvider> ldapAuthenticationProviders(List<LdapServerConfig> configs) {
         return configs.stream().map(this::createLdapProvider).toList();
     }
 
+    /**
+     * Creates an {@link BasicLdapAuthenticationProvider} for a given LDAP
+     * configuration.
+     *
+     * @param config the LDAP server configuration
+     * @return an initialized {@link BasicLdapAuthenticationProvider} instance
+     * @throws BeanCreationException if an error occurs during provider creation
+     */
     private BasicLdapAuthenticationProvider createLdapProvider(LdapServerConfig config) {
-        log.info("Creating LDAP AuthenticationProvider {} with URL {}", config.getName(), config.getUrl());
+        log.info("Creating LDAP AuthenticationProvider '{}' with URL {}", config.getName(), config.getUrl());
 
         try {
-            LdapAuthenticationProvider provider = new LdapAuthenticatorProviderBuilder()//
-                    .url(config.getUrl())//
-                    .baseDn(config.getBaseDn())//
-                    .userSearchBase(config.getUsersRdn())//
-                    .userSearchFilter(config.getUsersSearchFilter())//
-                    .rolesSearchBase(config.getRolesRdn())//
-                    .rolesSearchFilter(config.getRolesSearchFilter())//
-                    .adminDn(config.getAdminDn().orElse(null))//
-                    .adminPassword(config.getAdminPassword().orElse(null))//
+            LdapAuthenticationProvider provider = new LdapAuthenticatorProviderBuilder().url(config.getUrl())
+                    .baseDn(config.getBaseDn()).userSearchBase(config.getUsersRdn())
+                    .userSearchFilter(config.getUsersSearchFilter()).rolesSearchBase(config.getRolesRdn())
+                    .rolesSearchFilter(config.getRolesSearchFilter()).adminDn(config.getAdminDn().orElse(null))
+                    .adminPassword(config.getAdminPassword().orElse(null))
                     .returningAttributes(config.getReturningAttributes()).build();
             return new BasicLdapAuthenticationProvider(config.getName(), provider);
         } catch (RuntimeException e) {
-            throw new BeanCreationException(
-                    "Error creating LDAP Authentication Provider for config " + config + ": " + e.getMessage(), e);
+            throw new BeanCreationException("Error creating LDAP Authentication Provider for config " + config.getName()
+                    + ": " + e.getMessage(), e);
         }
     }
 }

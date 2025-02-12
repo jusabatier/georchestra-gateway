@@ -40,13 +40,15 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 
 /**
- * Config properties, usually loaded from georchestra datadir's
- * {@literal default.properties}.
+ * Configuration properties for geOrchestra Gateway security settings, typically
+ * loaded from the geOrchestra data directory's {@literal default.properties}
+ * file.
  * <p>
- * e.g.:
+ * Example configuration:
+ * </p>
  * 
  * <pre>
- *{@code 
+ * {@code 
  * ldapHost=localhost
  * ldapPort=389
  * ldapScheme=ldap
@@ -64,130 +66,166 @@ import lombok.experimental.Accessors;
 @ConfigurationProperties(prefix = "georchestra.gateway.security")
 public class GeorchestraGatewaySecurityConfigProperties implements Validator {
 
+    /**
+     * Flag indicating whether non-existing users should be created in LDAP
+     * automatically.
+     */
     private boolean createNonExistingUsersInLDAP = true;
 
+    /**
+     * Default organization assigned to users when no specific organization is set.
+     */
     private String defaultOrganization = "";
 
+    /**
+     * LDAP server configurations mapped by their respective names.
+     */
     @Valid
     private Map<String, Server> ldap = Map.of();
 
+    /**
+     * Represents a configured LDAP server.
+     */
     @Generated
     public static @Data class Server {
 
+        /**
+         * Indicates whether this LDAP configuration is enabled.
+         */
         boolean enabled;
 
         /**
-         * Whether the LDAP authentication source shall use georchestra-specific
+         * Whether the LDAP authentication source shall use geOrchestra-specific
          * extensions. For example, when using the default OpenLDAP database with
-         * additional user identity information
+         * additional user identity information.
          */
         boolean extended;
 
+        /**
+         * URL of the LDAP server.
+         */
         private String url;
 
         /**
-         * Flag indicating the LDAP authentication end point is an Active Directory
-         * service
+         * Flag indicating if the LDAP authentication endpoint is an Active Directory
+         * service.
          */
         private boolean activeDirectory;
 
         /**
-         * Base DN of the LDAP directory Base Distinguished Name of the LDAP directory.
-         * Also named root or suffix, see
-         * http://www.zytrax.com/books/ldap/apd/index.html#base
-         * <p>
-         * For example, georchestra's default baseDn is dc=georchestra,dc=org
+         * Base Distinguished Name (DN) of the LDAP directory. This represents the root
+         * suffix. Example: {@code dc=georchestra,dc=org}.
          */
         private String baseDn;
 
         /**
-         * How to extract user information. Only searchFilter is used if activeDirectory
-         * is true
+         * Configuration for extracting user information. When {@code activeDirectory}
+         * is {@code true}, only {@code searchFilter} is used.
          */
         private Users users;
 
         /**
-         * How to extract role information, un-used for Active Directory
+         * Configuration for extracting role information. This setting is unused for
+         * Active Directory.
          */
         private Roles roles;
 
         /**
-         * How to extract Organization information, only used for OpenLDAP if extended =
-         * true
+         * Configuration for extracting organization information. Used only for OpenLDAP
+         * when {@code extended} is {@code true}.
          */
         private Organizations orgs;
 
         /**
-         * The user distinguished name (principal) to use for getting authenticated
-         * contexts (optional).
+         * Distinguished Name (DN) of the administrator user used for LDAP
+         * authentication operations.
          */
         private String adminDn;
 
         /**
-         * The password (credentials) to use for getting authenticated contexts
-         * (optional).
+         * Password for the administrator user used for LDAP authentication operations.
          */
         private String adminPassword;
     }
 
+    /**
+     * Configuration for user-related LDAP attributes.
+     */
     @Generated
     public static @Data @Accessors(chain = true) class Users {
 
         /**
-         * Users RDN Relative distinguished name of the "users" LDAP organization unit.
-         * E.g. if the complete name (or DN) is ou=users,dc=georchestra,dc=org, the RDN
-         * is ou=users.
+         * Relative Distinguished Name (RDN) of the organizational unit containing
+         * users. Example: If the full DN is {@code ou=users,dc=georchestra,dc=org}, the
+         * RDN is {@code ou=users}.
          */
         private String rdn;
 
         /**
-         * Users search filter, e.g. (uid={0}) for OpenLDAP, and
-         * (&(objectClass=user)(userPrincipalName={0})) for ActiveDirectory
+         * LDAP search filter to find users. Example: {@code (uid={0})} for OpenLDAP or
+         * {@code (&(objectClass=user)(userPrincipalName={0}))} for Active Directory.
          */
         private String searchFilter;
 
         /**
-         * Specifies the attributes that will be returned as part of the search.
-         * <p>
-         * null indicates that all attributes will be returned. An empty array indicates
-         * no attributes are returned.
+         * Specifies the LDAP attributes to be returned in search results. {@code null}
+         * indicates all attributes will be returned. An empty array means no attributes
+         * will be returned.
          */
         private @Setter String[] returningAttributes;
     }
 
+    /**
+     * Configuration for role-related LDAP attributes.
+     */
     @Generated
     public static @Data @Accessors(chain = true) class Roles {
         /**
-         * Roles RDN Relative distinguished name of the "roles" LDAP organization unit.
-         * E.g. if the complete name (or DN) is ou=roles,dc=georchestra,dc=org, the RDN
-         * is ou=roles.
+         * Relative Distinguished Name (RDN) of the organizational unit containing
+         * roles. Example: If the full DN is {@code ou=roles,dc=georchestra,dc=org}, the
+         * RDN is {@code ou=roles}.
          */
         private String rdn;
 
         /**
-         * Roles search filter. e.g. (member={0})
+         * LDAP search filter used to determine role membership. Example:
+         * {@code (member={0})}.
          */
         private String searchFilter;
     }
 
+    /**
+     * Configuration for organization-related LDAP attributes.
+     */
     @Generated
     public static @Data @Accessors(chain = true) class Organizations {
 
         /**
-         * Organizations search base. Default: ou=orgs
+         * Relative Distinguished Name (RDN) of the organizational unit containing
+         * organizations. Default value: {@code ou=orgs}.
          */
         private String rdn = "ou=orgs";
 
         /**
-         * Pending organizations search base. Default: ou=pendingorgs
+         * Relative Distinguished Name (RDN) of the organizational unit containing
+         * pending organizations. Default value: {@code ou=pendingorgs}.
          */
         private String pendingRdn = "ou=pendingorgs";
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public @Override boolean supports(Class<?> clazz) {
         return GeorchestraGatewaySecurityConfigProperties.class.equals(clazz);
     }
 
+    /**
+     * Validates the LDAP configuration properties.
+     * 
+     * @param target the instance to validate
+     * @param errors the validation errors
+     */
     @Override
     public void validate(Object target, Errors errors) {
         GeorchestraGatewaySecurityConfigProperties config = (GeorchestraGatewaySecurityConfigProperties) target;
@@ -199,26 +237,35 @@ public class GeorchestraGatewaySecurityConfigProperties implements Validator {
         ldapConfig.forEach((name, serverConfig) -> validations.validate(name, serverConfig, errors));
     }
 
+    /**
+     * Retrieves the list of enabled simple (non-extended) LDAP configurations.
+     * 
+     * @return a list of basic {@link LdapServerConfig} instances.
+     */
     public List<LdapServerConfig> simpleEnabled() {
         LdapConfigBuilder builder = new LdapConfigBuilder();
-        return entries()//
-                .filter(e -> e.getValue().isEnabled())//
-                .filter(e -> !e.getValue().isExtended())//
+        return entries().filter(e -> e.getValue().isEnabled()).filter(e -> !e.getValue().isExtended())
                 .map(e -> builder.asBasicLdapConfig(e.getKey(), e.getValue())).toList();
     }
 
+    /**
+     * Retrieves the list of enabled extended LDAP configurations.
+     * 
+     * @return a list of {@link ExtendedLdapConfig} instances.
+     */
     public List<ExtendedLdapConfig> extendedEnabled() {
         LdapConfigBuilder builder = new LdapConfigBuilder();
-        return entries()//
-                .filter(e -> e.getValue().isEnabled())//
-                .filter(e -> !e.getValue().isActiveDirectory())//
-                .filter(e -> e.getValue().isExtended())//
-                .map(e -> builder.asExtendedLdapConfig(e.getKey(), e.getValue()))//
+        return entries().filter(e -> e.getValue().isEnabled()).filter(e -> !e.getValue().isActiveDirectory())
+                .filter(e -> e.getValue().isExtended()).map(e -> builder.asExtendedLdapConfig(e.getKey(), e.getValue()))
                 .toList();
     }
 
+    /**
+     * Retrieves a stream of LDAP configuration entries.
+     * 
+     * @return a stream of LDAP server entries.
+     */
     private Stream<Entry<String, Server>> entries() {
         return ldap == null ? Stream.empty() : ldap.entrySet().stream();
     }
-
 }

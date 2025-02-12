@@ -18,13 +18,31 @@
  */
 package org.georchestra.gateway.security.exceptions;
 
+/**
+ * Exception thrown when multiple user accounts are found with the same
+ * username.
+ * <p>
+ * This exception is used to indicate a conflict in user identity resolution,
+ * typically occurring during authentication or user synchronization processes.
+ * </p>
+ */
 @SuppressWarnings("serial")
 public class DuplicatedUsernameFoundException extends RuntimeException {
 
+    /**
+     * Constructs a new {@code DuplicatedUsernameFoundException} with the specified
+     * detail message.
+     *
+     * @param message the detail message
+     */
     public DuplicatedUsernameFoundException(String message) {
         super(message);
     }
 
+    /**
+     * Constructs a new {@code DuplicatedUsernameFoundException} without a detail
+     * message.
+     */
     public DuplicatedUsernameFoundException() {
     }
 }

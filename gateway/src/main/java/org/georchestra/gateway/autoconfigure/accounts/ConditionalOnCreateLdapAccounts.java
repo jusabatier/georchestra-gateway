@@ -28,8 +28,26 @@ import java.lang.annotation.Target;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 /**
+ * Meta-annotation that enables a bean only if LDAP account creation is allowed.
+ * <p>
+ * This annotation is used to conditionally enable beans when both of the
+ * following conditions are met:
+ * <ul>
+ * <li>The default geOrchestra LDAP integration is enabled (via
+ * {@link ConditionalOnDefaultGeorchestraLdapEnabled}).</li>
+ * <li>The property
+ * {@code georchestra.gateway.security.create-non-existing-users-in-l-d-a-p} is
+ * set to {@code true}.</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * If the property is missing or explicitly set to {@code false}, the annotated
+ * bean will not be created.
+ * </p>
  *
  * @see ConditionalOnDefaultGeorchestraLdapEnabled
+ * @see ConditionalOnProperty
  */
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)

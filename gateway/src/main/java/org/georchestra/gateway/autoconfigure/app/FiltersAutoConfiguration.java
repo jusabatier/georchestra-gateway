@@ -35,6 +35,24 @@ import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
+/**
+ * Auto-configuration for geOrchestra gateway filters and predicates.
+ * <p>
+ * This configuration registers custom filters and predicates that enhance
+ * Spring Cloud Gateway's request handling capabilities. It ensures that
+ * necessary filters are available before {@link GatewayAutoConfiguration} is
+ * loaded.
+ * </p>
+ *
+ * <p>
+ * This class also imports {@link HeaderFiltersConfiguration} and enables
+ * configuration properties via {@link GatewayConfigProperties}.
+ * </p>
+ *
+ * @see GatewayAutoConfiguration
+ * @see HeaderFiltersConfiguration
+ * @see GatewayConfigProperties
+ */
 @AutoConfiguration
 @AutoConfigureBefore(GatewayAutoConfiguration.class)
 @Import(HeaderFiltersConfiguration.class)
@@ -42,40 +60,71 @@ import org.springframework.context.annotation.Import;
 public class FiltersAutoConfiguration {
 
     /**
-     * {@link GlobalFilter} to {@link GeorchestraTargetConfig#setTarget save) the
-     * matched Route's GeorchestraTargetConfig for each HTTP request-response
-     * interaction before other filters are applied.
+     * Registers a {@link GlobalFilter} that resolves the target configuration for
+     * each incoming request.
+     * <p>
+     * This filter extracts the matched route's {@link GeorchestraTargetConfig} and
+     * saves it for later processing in the request-response lifecycle.
+     * </p>
+     *
+     * @param config the gateway configuration properties
+     * @return an instance of {@link ResolveTargetGlobalFilter}
      */
     @Bean
     ResolveTargetGlobalFilter resolveTargetWebFilter(GatewayConfigProperties config) {
         return new ResolveTargetGlobalFilter(config);
     }
 
+    /**
+     * Registers a gateway filter factory that processes login-related query
+     * parameters.
+     *
+     * @return an instance of {@link LoginParamRedirectGatewayFilterFactory}
+     */
     @Bean
     LoginParamRedirectGatewayFilterFactory loginParamRedirectGatewayFilterFactory() {
         return new LoginParamRedirectGatewayFilterFactory();
     }
 
     /**
-     * Custom gateway predicate factory to support matching by regular expressions
-     * on both name and value of query parameters
+     * Registers a custom route predicate factory that allows matching query
+     * parameters based on regular expressions.
+     *
+     * @return an instance of {@link RegExpQueryRoutePredicateFactory}
      */
     @Bean
     RegExpQueryRoutePredicateFactory regExpQueryRoutePredicateFactory() {
         return new RegExpQueryRoutePredicateFactory();
     }
 
-    /** Allows to enable routes only if a given spring profile is enabled */
+    /**
+     * Registers a gateway filter factory that enables or disables routes based on
+     * the active Spring profiles.
+     *
+     * @return an instance of {@link RouteProfileGatewayFilterFactory}
+     */
     @Bean
     RouteProfileGatewayFilterFactory routeProfileGatewayFilterFactory() {
         return new RouteProfileGatewayFilterFactory();
     }
 
+    /**
+     * Registers a gateway filter factory that strips the base path from incoming
+     * requests.
+     *
+     * @return an instance of {@link StripBasePathGatewayFilterFactory}
+     */
     @Bean
     StripBasePathGatewayFilterFactory stripBasePathGatewayFilterFactory() {
         return new StripBasePathGatewayFilterFactory();
     }
 
+    /**
+     * Registers a gateway filter factory that handles application-level errors
+     * gracefully.
+     *
+     * @return an instance of {@link ApplicationErrorGatewayFilterFactory}
+     */
     @Bean
     ApplicationErrorGatewayFilterFactory applicationErrorGatewayFilterFactory() {
         return new ApplicationErrorGatewayFilterFactory();

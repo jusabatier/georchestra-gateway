@@ -38,17 +38,20 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 /**
- * Filter to allow custom error pages to be used when an application behind the
- * gateways returns an error, only for idempotent HTTP response status codes
- * (i.e. GET, HEAD, OPTIONS).
+ * Gateway filter that enables custom error pages when a proxied application
+ * responds with an error status, applicable only for idempotent HTTP methods
+ * (e.g., GET, HEAD, OPTIONS).
  * <p>
- * {@link GatewayFilterFactory} providing a {@link GatewayFilter} that throws a
- * {@link ResponseStatusException} with the proxied response status code if the
- * target responded with a {@code 400...} or {@code 500...} status code.
- * 
+ * This {@link GatewayFilterFactory} provides a {@link GatewayFilter} that
+ * throws a {@link ResponseStatusException} with the response status code if the
+ * proxied service returns a {@code 400...} or {@code 500...} status. The
+ * gateway will then apply its custom error handling.
+ * </p>
  * <p>
- * Usage: to enable it globally, add this to application.yaml :
- * 
+ * <b>Usage:</b> To enable this filter globally, add the following to
+ * {@code application.yaml}:
+ * </p>
+ *
  * <pre>
  * <code>
  * spring:
@@ -58,10 +61,12 @@ import reactor.core.publisher.Mono;
  *        - ApplicationError
  * </code>
  * </pre>
- * 
- * To enable it only on some routes, add this to concerned routes in
- * {@literal routes.yaml}:
- * 
+ *
+ * <p>
+ * To enable it only for specific routes, configure the filter in
+ * {@code routes.yaml}:
+ * </p>
+ *
  * <pre>
  * <code>
  *        filters:
@@ -81,11 +86,22 @@ public class ApplicationErrorGatewayFilterFactory extends AbstractGatewayFilterF
         return new ServiceErrorGatewayFilter();
     }
 
+    /**
+     * Gateway filter that intercepts error responses and triggers a
+     * {@link ResponseStatusException} to allow the gateway to render a custom error
+     * page.
+     */
     private class ServiceErrorGatewayFilter implements GatewayFilter, Ordered {
+
         /**
-         * @return {@link Ordered#HIGHEST_PRECEDENCE} or
-         *         {@link ApplicationErrorConveyorHttpResponse#beforeCommit(Supplier)}
-         *         won't be called
+         * Returns the order of this filter to ensure it runs at the highest precedence.
+         * <p>
+         * This is necessary so that
+         * {@link ApplicationErrorConveyorHttpResponse#beforeCommit(Supplier)} gets
+         * executed properly.
+         * </p>
+         *
+         * @return {@link Ordered#HIGHEST_PRECEDENCE}
          */
         @Override
         public int getOrder() {
@@ -93,11 +109,18 @@ public class ApplicationErrorGatewayFilterFactory extends AbstractGatewayFilterF
         }
 
         /**
-         * If the request method is idempotent and accepts {@literal text/html}, applies
-         * a filter that when the routed response receives an error status code, will
-         * throw a {@link ResponseStatusException} with the same status, for the gateway
-         * to apply the customized error template, also when the status code comes from
-         * a proxied service response
+         * Applies the filter logic by wrapping the response in a decorator that checks
+         * for error statuses.
+         * <p>
+         * If the request method is idempotent and the request accepts
+         * {@code text/html}, the response is wrapped in a
+         * {@link ApplicationErrorConveyorHttpResponse}, which throws a
+         * {@link ResponseStatusException} if an error status code is encountered.
+         * </p>
+         *
+         * @param exchange the current server exchange
+         * @param chain    the gateway filter chain
+         * @return a {@link Mono} that completes when the filter chain is executed
          */
         @Override
         public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -108,16 +131,37 @@ public class ApplicationErrorGatewayFilterFactory extends AbstractGatewayFilterF
         }
     }
 
+    /**
+     * Wraps the server exchange's response with an
+     * {@link ApplicationErrorConveyorHttpResponse} to intercept error statuses.
+     *
+     * @param exchange the server exchange to decorate
+     * @return a new {@link ServerWebExchange} instance with the decorated response
+     */
     ServerWebExchange decorate(ServerWebExchange exchange) {
         var response = new ApplicationErrorConveyorHttpResponse(exchange.getResponse());
         exchange = exchange.mutate().response(response).build();
         return exchange;
     }
 
+    /**
+     * Determines if the request should be filtered based on method idempotency and
+     * accepted content types.
+     *
+     * @param request the incoming HTTP request
+     * @return {@code true} if the request should be filtered, {@code false}
+     *         otherwise
+     */
     boolean canFilter(ServerHttpRequest request) {
         return methodIsIdempotent(request.getMethod()) && acceptsHtml(request);
     }
 
+    /**
+     * Checks if the request method is idempotent (i.e., does not modify state).
+     *
+     * @param method the HTTP method to check
+     * @return {@code true} if the method is idempotent, {@code false} otherwise
+     */
     boolean methodIsIdempotent(HttpMethod method) {
         return switch (method) {
         case GET, HEAD, OPTIONS, TRACE -> true;
@@ -125,15 +169,21 @@ public class ApplicationErrorGatewayFilterFactory extends AbstractGatewayFilterF
         };
     }
 
+    /**
+     * Determines whether the request accepts HTML responses.
+     *
+     * @param request the incoming HTTP request
+     * @return {@code true} if the request accepts {@code text/html}, {@code false}
+     *         otherwise
+     */
     boolean acceptsHtml(ServerHttpRequest request) {
         return request.getHeaders().getAccept().stream().anyMatch(MediaType.TEXT_HTML::isCompatibleWith);
     }
 
     /**
-     * A response decorator that throws a {@link ResponseStatusException} at
-     * {@link #beforeCommit} if the status code is an error code, thus letting the
-     * gateway render the appropriate custom error page instead of the original
-     * application response body.
+     * A response decorator that throws a {@link ResponseStatusException} in
+     * {@link #beforeCommit} if the status code is an error, allowing the gateway to
+     * handle the error with a custom response page.
      */
     private static class ApplicationErrorConveyorHttpResponse extends ServerHttpResponseDecorator {
 
@@ -148,6 +198,10 @@ public class ApplicationErrorGatewayFilterFactory extends AbstractGatewayFilterF
             super.beforeCommit(() -> checkedAction);
         }
 
+        /**
+         * Throws a {@link ResponseStatusException} if the response status is in the 4xx
+         * or 5xx range, allowing the gateway to apply custom error handling.
+         */
         private void checkStatusCode() {
             HttpStatus statusCode = getStatusCode();
             log.debug("native status code: {}", statusCode);

@@ -29,29 +29,58 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
 
 /**
- * {@link Configuration @Configuration} to enable sending events over rabbitmq *
+ * Configures RabbitMQ event handling for geOrchestra account creation events.
  * <p>
- * When an account is created in geOrchestra's LDAP in response to a
- * pre-authenticated or OIDC successful authentication, an
- * {@link AccountCreated} event will be catch up and sent over the wire.
- * 
+ * This configuration enables the system to send events via RabbitMQ when an
+ * account is created in geOrchestra's LDAP in response to pre-authenticated or
+ * OpenID Connect (OIDC) authentication.
+ * </p>
+ * <p>
+ * When an {@link AccountCreated} event is published, it is intercepted and
+ * forwarded to the RabbitMQ event queue.
+ * </p>
+ *
+ * <p>
+ * This configuration also imports RabbitMQ-related XML context files:
+ * <ul>
+ * <li>{@code rabbit-listener-context.xml} - Configures message listeners</li>
+ * <li>{@code rabbit-sender-context.xml} - Configures message senders</li>
+ * </ul>
+ * </p>
+ *
+ * @see AccountCreated
  * @see RabbitmqEventsConfigurationProperties
- * 
  */
 @Configuration
 @EnableConfigurationProperties(RabbitmqEventsConfigurationProperties.class)
 @ImportResource({ "classpath:rabbit-listener-context.xml", "classpath:rabbit-sender-context.xml" })
 public class RabbitmqEventsConfiguration {
 
+    /**
+     * Defines the RabbitMQ event sender for publishing account creation events.
+     *
+     * @param eventTemplate the RabbitMQ {@link RabbitTemplate} used for message
+     *                      publishing
+     * @return an instance of {@link RabbitmqAccountCreatedEventSender}
+     */
     @Bean
     RabbitmqAccountCreatedEventSender eventsSender(@Qualifier("eventTemplate") RabbitTemplate eventTemplate) {
         return new RabbitmqAccountCreatedEventSender(eventTemplate);
     }
 
+    /**
+     * Configures a RabbitMQ connection factory.
+     * <p>
+     * This method initializes a {@link CachingConnectionFactory} using the RabbitMQ
+     * connection properties defined in
+     * {@link RabbitmqEventsConfigurationProperties}.
+     * </p>
+     *
+     * @param config the RabbitMQ configuration properties
+     * @return a configured {@link CachingConnectionFactory} instance
+     */
     @Bean
-    org.springframework.amqp.rabbit.connection.CachingConnectionFactory connectionFactory(
-            RabbitmqEventsConfigurationProperties config) {
-
+    CachingConnectionFactory connectionFactory(RabbitmqEventsConfigurationProperties config) {
         com.rabbitmq.client.ConnectionFactory fac = new com.rabbitmq.client.ConnectionFactory();
         fac.setHost(config.getHost());
         fac.setPort(config.getPort());
@@ -61,9 +90,18 @@ public class RabbitmqEventsConfiguration {
         return new CachingConnectionFactory(fac);
     }
 
+    /**
+     * Configures a health indicator for monitoring the RabbitMQ connection status.
+     * <p>
+     * This health indicator integrates with Spring Boot Actuator, allowing
+     * real-time monitoring of the RabbitMQ connection through health endpoints.
+     * </p>
+     *
+     * @param eventTemplate the RabbitMQ template used for event communication
+     * @return a configured {@link RabbitHealthIndicator}
+     */
     @Bean
     RabbitHealthIndicator rabbitHealthIndicator(@Qualifier("eventTemplate") RabbitTemplate eventTemplate) {
         return new RabbitHealthIndicator(eventTemplate);
     }
-
 }

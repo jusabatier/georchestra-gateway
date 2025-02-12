@@ -24,10 +24,23 @@ import lombok.NonNull;
 import lombok.Value;
 
 /**
- * Application event published when a new account has been created
+ * Event published when a new {@link GeorchestraUser} account is created.
+ * <p>
+ * This event is triggered whenever a new user is successfully registered in the
+ * system. It can be used to listen for account creation and trigger additional
+ * actions such as logging, notifications, or audits.
+ * </p>
+ *
+ * <p>
+ * This class is immutable and thread-safe, though the attached
+ * {@link GeorchestraUser} is mutable, so make sure not to modify it.
+ * </p>
+ *
+ * @see GeorchestraUser
  */
 @Value
 public class AccountCreated {
 
+    /** The newly created user account. */
     private @NonNull GeorchestraUser user;
 }

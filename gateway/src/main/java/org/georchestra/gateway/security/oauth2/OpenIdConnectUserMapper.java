@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License along with
  * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.georchestra.gateway.security.oauth2;
 
 import java.util.List;
@@ -46,88 +45,83 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Maps an OpenID authenticated {@link OidcUser user} to a
+ * Maps an OpenID Connect (OIDC) authenticated {@link OidcUser} to a
  * {@link GeorchestraUser}.
  * <p>
- * {@link StandardClaimAccessor standard claims} map as follow:
+ * The mapping follows OpenID Connect standard claims:
  * <ul>
- * <li>{@link StandardClaimAccessor#getSubject() subject} to
- * {@link GeorchestraUser#getId() id}
- * <li>{@link StandardClaimAccessor#getPreferredUsername preferredUsername} or
- * {@link StandardClaimAccessor#getEmail email} to
- * {@link GeorchestraUser#setUsername username}, in that order of precedence.
- * <li>{@link StandardClaimAccessor#getGivenName givenName} to
- * {@link GeorchestraUser#setFirstName firstName}
- * <li>{@link StandardClaimAccessor#getEmail email} to
- * {@link GeorchestraUser#setEmail email}
- * <li>{@link StandardClaimAccessor#getPhoneNumber phoneNumber} to
- * {@link GeorchestraUser#setTelephoneNumber telephoneNumber}
- * <li>{@link AddressStandardClaim#getFormatted address.formatted} to
- * {@link GeorchestraUser#setPostalAddress postalAddress}
+ * <li>{@link StandardClaimAccessor#getSubject() subject} →
+ * {@link GeorchestraUser#getId() id}</li>
+ * <li>{@link StandardClaimAccessor#getPreferredUsername() preferredUsername} or
+ * {@link StandardClaimAccessor#getEmail() email} →
+ * {@link GeorchestraUser#setUsername(String) username}</li>
+ * <li>{@link StandardClaimAccessor#getGivenName() givenName} →
+ * {@link GeorchestraUser#setFirstName(String) firstName}</li>
+ * <li>{@link StandardClaimAccessor#getFamilyName() familyName} →
+ * {@link GeorchestraUser#setLastName(String) lastName}</li>
+ * <li>{@link StandardClaimAccessor#getEmail() email} →
+ * {@link GeorchestraUser#setEmail(String) email}</li>
+ * <li>{@link StandardClaimAccessor#getPhoneNumber() phoneNumber} →
+ * {@link GeorchestraUser#setTelephoneNumber(String) telephoneNumber}</li>
+ * <li>{@link AddressStandardClaim#getFormatted() address.formatted} →
+ * {@link GeorchestraUser#setPostalAddress(String) postalAddress}</li>
  * </ul>
+ *
  * <p>
- * Non-standard claims can be used to set {@link GeorchestraUser#setRoles roles}
- * and {@link GeorchestraUser#setOrganization organization} short name by
- * externalized configuration of
- * {@link OpenIdConnectCustomClaimsConfigProperties}, using a JSONPath
- * expression with the {@link OidcUser#getClaims()} {@code Map<String, Object>}
- * as root object.
- * <p>
- * For example, if the OpenID Connect token contains the following claims:
+ * Non-standard claims can be mapped to {@link GeorchestraUser#setRoles(List)
+ * roles} and {@link GeorchestraUser#setOrganization(String) organization} via
+ * {@link OpenIdConnectCustomClaimsConfigProperties} using JSONPath expressions.
+ * </p>
+ *
+ * <h3>Example Configuration</h3> If the OpenID Connect token contains the
+ * following claims:
  * 
  * <pre>
- * <code>
- *  { ..., 
- *    "groups_json": [[{"name":"GDI Planer"}],[{"name":"GDI Editor"}]],
- *    "PartyOrganisationID": "6007280321",
- *     ...
- *  }
- * <code>
- * </pre>
- * 
- * the following configuration in {@literal application.yml} (or other included
- * configuration file):
- * 
- * <pre>
- * {@code
- *  georchestra:
- *    gateway:
- *      security:
- *        oidc:
- *          claims:
- *           organization.path: "$.PartyOrganisationID"
- *           roles.path: "$.groups_json..['name']"
+ * {
+ *   "groups_json": [[{"name":"GDI Planer"}],[{"name":"GDI Editor"}]],
+ *   "PartyOrganisationID": "6007280321"
  * }
  * </pre>
  * 
- * will assign {@literal "6007280321"} to
- * {@link GeorchestraUser#setOrganization(String)}, and <strong>append<strong>
- * {@literal ["ROLE_GDI_PLANER", "ROLE_GDI_EDITOR"]} to
- * {@link GeorchestraUser#setRoles(List)}.
- * <p>
- * Additional, some control can be applied over how to map strings resolved from
- * the roles JSONPath expression to internal role names through the following
- * config properties:
+ * The following configuration in {@code application.yml}:
  * 
  * <pre>
- * {@code
- *  georchestra.gateway.security.oidc.claims.roles:
+ * georchestra:
+ *   gateway:
+ *     security:
+ *       oidc:
+ *         claims:
+ *           organization.path: "$.PartyOrganisationID"
+ *           roles.path: "$.groups_json..['name']"
+ * </pre>
+ * 
+ * Will:
+ * <ul>
+ * <li>Assign {@code "6007280321"} to
+ * {@link GeorchestraUser#setOrganization(String)}</li>
+ * <li>Append {@code ["ROLE_GDI_PLANER", "ROLE_GDI_EDITOR"]} to
+ * {@link GeorchestraUser#setRoles(List)}</li>
+ * </ul>
+ *
+ * <h3>Role Mapping Customization</h3> Additional customization for role name
+ * formatting:
+ * 
+ * <pre>
+ * georchestra.gateway.security.oidc.claims.roles:
  *   path: "$.groups_json..['name']"
  *   uppercase: true
  *   normalize: true
  *   append: true
- * }
  * </pre>
  * 
- * With the following meanings:
+ * Where:
  * <ul>
- * <li>{@code uppercase}: Whether to return mapped role names as upper-case.
- * Defaults to {@code true}.
- * <li>{@code normalize}: Whether to remove special characters and replace
- * spaces by underscores. Defaults to {@code true}.
- * <li>{@code append}: Whether to append the resolved role names to the roles
- * given by the OAuth2 authentication. (true), or replace them (false). Defaults
- * to {@code true}.
+ * <li>{@code uppercase}: Convert role names to uppercase (default:
+ * {@code true}).</li>
+ * <li>{@code normalize}: Remove special characters and replace spaces with
+ * underscores (default: {@code true}).</li>
+ * <li>{@code append}: Append roles to those provided by the authentication,
+ * rather than replacing them (default: {@code true}).</li>
  * </ul>
  */
 @RequiredArgsConstructor
@@ -137,15 +131,35 @@ public class OpenIdConnectUserMapper extends OAuth2UserMapper {
 
     private final @NonNull OpenIdConnectCustomClaimsConfigProperties nonStandardClaimsConfig;
 
+    /**
+     * Filters authentication tokens to process only {@link OidcUser}-based
+     * authentication.
+     *
+     * @return Predicate that checks if the principal is an instance of
+     *         {@link OidcUser}.
+     */
     protected @Override Predicate<OAuth2AuthenticationToken> tokenFilter() {
         return token -> token.getPrincipal() instanceof OidcUser;
     }
 
+    /**
+     * Ensures this mapper runs before the generic {@link OAuth2UserMapper}.
+     *
+     * @return {@link Ordered#HIGHEST_PRECEDENCE} to prioritize this mapper.
+     */
     public @Override int getOrder() {
-        // be evaluated before OAuth2AuthenticationTokenUserMapper
         return Ordered.HIGHEST_PRECEDENCE;
     }
 
+    /**
+     * Maps an OpenID Connect (OIDC) authenticated user to a
+     * {@link GeorchestraUser}.
+     *
+     * @param token The {@link OAuth2AuthenticationToken} containing the
+     *              authentication information.
+     * @return An {@link Optional} containing the mapped {@link GeorchestraUser}, or
+     *         empty if mapping fails.
+     */
     protected @Override Optional<GeorchestraUser> map(OAuth2AuthenticationToken token) {
         GeorchestraUser user = super.map(token).orElseGet(GeorchestraUser::new);
         OidcUser oidcUser = (OidcUser) token.getPrincipal();
@@ -162,50 +176,53 @@ public class OpenIdConnectUserMapper extends OAuth2UserMapper {
     }
 
     /**
-     * @param claims OpenId Connect merged claims from {@link OidcUserInfo} and
-     *               {@link OidcIdToken}
-     * @param target
+     * Applies non-standard claims to the {@link GeorchestraUser} based on
+     * {@link OpenIdConnectCustomClaimsConfigProperties}.
+     *
+     * @param claims OpenID Connect claims extracted from {@link OidcUserInfo} and
+     *               {@link OidcIdToken}.
+     * @param target The {@link GeorchestraUser} to update.
      */
     @VisibleForTesting
     void applyNonStandardClaims(Map<String, Object> claims, GeorchestraUser target) {
 
-        nonStandardClaimsConfig.id().map(jsonEvaluator -> jsonEvaluator.extract(claims))//
-                .map(List::stream)//
-                .flatMap(Stream::findFirst)//
-                .ifPresent(target::setId);
+        nonStandardClaimsConfig.id().map(jsonEvaluator -> jsonEvaluator.extract(claims)).map(List::stream)
+                .flatMap(Stream::findFirst).ifPresent(target::setId);
 
         nonStandardClaimsConfig.roles().ifPresent(rolesMapper -> rolesMapper.apply(claims, target));
-        nonStandardClaimsConfig.organization().map(jsonEvaluator -> jsonEvaluator.extract(claims))//
-                .map(List::stream)//
-                .flatMap(Stream::findFirst)//
-                .ifPresent(target::setOrganization);
+
+        nonStandardClaimsConfig.organization().map(jsonEvaluator -> jsonEvaluator.extract(claims)).map(List::stream)
+                .flatMap(Stream::findFirst).ifPresent(target::setOrganization);
     }
 
+    /**
+     * Applies standard OpenID Connect claims to a {@link GeorchestraUser}.
+     *
+     * @param standardClaims The OIDC standard claims.
+     * @param target         The user to populate with standard claim values.
+     */
     @VisibleForTesting
     void applyStandardClaims(StandardClaimAccessor standardClaims, GeorchestraUser target) {
-        String subjectId = standardClaims.getSubject();
-        String preferredUsername = standardClaims.getPreferredUsername();
-        String givenName = standardClaims.getGivenName();
-        String familyName = standardClaims.getFamilyName();
-
-        String email = standardClaims.getEmail();
-        String phoneNumber = standardClaims.getPhoneNumber();
+        apply(target::setId, standardClaims.getSubject());
+        apply(target::setUsername, standardClaims.getPreferredUsername(), standardClaims.getSubject());
+        apply(target::setFirstName, standardClaims.getGivenName());
+        apply(target::setLastName, standardClaims.getFamilyName());
+        apply(target::setEmail, standardClaims.getEmail());
+        apply(target::setTelephoneNumber, standardClaims.getPhoneNumber());
 
         AddressStandardClaim address = standardClaims.getAddress();
-        String formattedAddress = address == null ? null : address.getFormatted();
-
-        apply(target::setId, subjectId);
-        apply(target::setUsername, preferredUsername, subjectId);
-        apply(target::setFirstName, givenName);
-        apply(target::setLastName, familyName);
-        apply(target::setEmail, email);
-        apply(target::setTelephoneNumber, phoneNumber);
-        apply(target::setPostalAddress, formattedAddress);
+        apply(target::setPostalAddress, address == null ? null : address.getFormatted());
     }
 
-    protected void apply(Consumer<String> setter, String... alternativesInOrderOfPreference) {
-        Stream.of(alternativesInOrderOfPreference).filter(Objects::nonNull).findFirst()//
-                .ifPresent(setter::accept);
+    /**
+     * Applies the first non-null value from the provided alternatives to the
+     * setter.
+     *
+     * @param setter       The setter method to apply the value to.
+     * @param alternatives The list of potential values in order of preference.
+     */
+    protected void apply(Consumer<String> setter, String... alternatives) {
+        Stream.of(alternatives).filter(Objects::nonNull).findFirst().ifPresent(setter::accept);
     }
 
     protected @Override Logger logger() {

@@ -23,13 +23,18 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 /**
- * {@link AutoConfiguration @AutoConfiguration} to enable request headers
- * pre-authentication.
+ * Auto-configuration for request headers pre-authentication.
  * <p>
- * This feature shall be enabled through the
- * {@code georchestra.gateway.security.header-authentication.enabled=true}
- * config property.
- * 
+ * This configuration enables header-based pre-authentication when the
+ * {@code georchestra.gateway.security.header-authentication.enabled} property
+ * is set to {@code true}.
+ * </p>
+ *
+ * <p>
+ * It imports {@link HeaderPreAuthenticationConfiguration}, which provides the
+ * necessary beans for handling pre-authentication via request headers.
+ * </p>
+ *
  * @see ConditionalOnHeaderPreAuthentication
  * @see HeaderPreAuthenticationConfiguration
  */

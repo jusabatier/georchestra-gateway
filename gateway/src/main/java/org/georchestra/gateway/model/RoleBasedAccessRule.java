@@ -28,11 +28,12 @@ import lombok.Generated;
 import lombok.experimental.Accessors;
 
 /**
- * Models access rules to intercepted Ant-pattern URIs based on roles.
+ * Defines access rules for intercepted Ant-pattern URIs based on user roles.
  * <p>
- * Role names are defined by the authenticated user's
- * {@link AbstractAuthenticationToken#getAuthorities() authority names} (i.e.
- * {@link GrantedAuthority#getAuthority()}) .
+ * Role names correspond to the authenticated user's
+ * {@link AbstractAuthenticationToken#getAuthorities() authority names}, which
+ * are obtained via {@link GrantedAuthority#getAuthority()}.
+ * </p>
  */
 @Data
 @Generated
@@ -40,31 +41,39 @@ import lombok.experimental.Accessors;
 public class RoleBasedAccessRule {
 
     /**
-     * List of Ant pattern URI's, excluding the application context, the Gateway
-     * shall intercept and apply the access rules defined here. E.g.
+     * List of Ant pattern URIs (excluding the application context) that the gateway
+     * intercepts to enforce access rules.
      */
     private List<String> interceptUrl = List.of();
 
     /**
-     * Highest precedence rule, if {@code true}, forbids access to the intercepted
-     * URLs
+     * Specifies whether access to the intercepted URLs is explicitly forbidden.
+     * <p>
+     * If set to {@code true}, access is denied to all users, regardless of role.
+     * </p>
      */
     private boolean forbidden = false;
 
     /**
-     * Whether anonymous (unauthenticated) access is to be granted to the
-     * intercepted URIs. If {@code true}, no further specification is applied to the
-     * intercepted urls (i.e. if set, {@link #allowedRoles} are ignored). If
-     * {@code false} and the {@link #getAllowedRoles() allowed roles} is empty, then
-     * any authenticated user is granted access to the {@link #getInterceptUrl()
-     * intercepted URLs}.
+     * Determines whether anonymous (unauthenticated) access is allowed.
+     * <p>
+     * If set to {@code true}, no additional role-based access checks are applied to
+     * the intercepted URLs, meaning all users can access them. <br>
+     * If set to {@code false} and {@link #allowedRoles} is empty, access is granted
+     * to any authenticated user.
+     * </p>
      */
     private boolean anonymous = false;
 
     /**
-     * Role names that the authenticated user must be part of to be granted access
-     * to the intercepted URIs. The ROLE_ prefix is optional. For example, the role
-     * set [ROLE_USER, ROLE_AUDITOR] is equivalent to [USER, AUDITOR]
+     * Specifies the roles required to access the intercepted URIs.
+     * <p>
+     * If the list is empty and {@link #anonymous} is {@code false}, any
+     * authenticated user is granted access. <br>
+     * Role names can be provided with or without the {@code ROLE_} prefix. For
+     * example, the role set {@code [ROLE_USER, ROLE_AUDITOR]} is equivalent to
+     * {@code [USER, AUDITOR]}.
+     * </p>
      */
     private List<String> allowedRoles = List.of();
 }

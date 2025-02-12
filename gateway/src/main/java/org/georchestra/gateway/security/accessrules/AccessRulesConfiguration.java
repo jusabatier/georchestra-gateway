@@ -24,10 +24,36 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Configures geOrchestra-specific access rules based on role-based security
+ * policies.
+ * <p>
+ * This configuration registers the {@link AccessRulesCustomizer}, which applies
+ * role-based access rules to incoming requests based on the settings defined in
+ * {@link GatewayConfigProperties}.
+ * </p>
+ * 
+ * <p>
+ * The rules are configured globally and can be overridden on a per-service
+ * basis via {@code georchestra.gateway.services.[service].access-rules}.
+ * </p>
+ * 
+ * @see AccessRulesCustomizer
+ * @see GatewayConfigProperties#getGlobalAccessRules()
+ * @see GatewayConfigProperties#getServices()
+ */
 @Configuration
 @EnableConfigurationProperties(GatewayConfigProperties.class)
 public class AccessRulesConfiguration {
 
+    /**
+     * Registers the {@link AccessRulesCustomizer} bean to enforce role-based access
+     * rules.
+     *
+     * @param config     the gateway configuration properties
+     * @param userMapper the user identity resolver for extracting user roles
+     * @return an instance of {@link AccessRulesCustomizer}
+     */
     @Bean
     AccessRulesCustomizer georchestraAccessRulesCustomizer(GatewayConfigProperties config,
             GeorchestraUserMapper userMapper) {

@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License along with
  * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.georchestra.gateway.security.oauth2;
 
 import java.util.ArrayList;
@@ -40,38 +39,55 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Maps {@link OAuth2AuthenticationToken} to {@link GeorchestraUser}.
  * <p>
+ * This class extracts user information from an OAuth2 authentication token and
+ * maps it to a {@link GeorchestraUser}. The mapping process follows these
+ * rules:
+ * </p>
  * <ul>
- * <li>The {@link OAuth2User principal}'s {@literal login}
- * {@link OAuth2User#getAttributes() attribute} is used with preference to the
- * {@link OAuth2AuthenticationToken#getName() name} if provided, to set the
- * {@link GeorchestraUser#setUsername(String) username}, since the name is
- * usually an external sytem's numeric identifier that's not really appropriate
- * for a username.
- * <li>The user's {@link GeorchestraUser#setEmail(String) email} is obtained
- * from the {@literal email} {@link OAuth2User#getAttributes() attribute}, if
- * present.
- * <li>The user's {@link GeorchestraUser#setRoles(List) roles} are derived from
- * the {@link GrantedAuthority granted authorities} in the
- * {@link OAuth2User#getAuthorities()}, removing those that start with
- * {@literal ROLE_SCOPE_} or {@code SCOPE_}.
+ * <li>The {@link OAuth2User principal}'s {@code login} attribute is used with
+ * preference over {@link OAuth2AuthenticationToken#getName()} if available, as
+ * the latter often contains an external system's numeric identifier.</li>
+ * <li>The user's email is extracted from the {@code email} attribute, if
+ * present.</li>
+ * <li>Roles are derived from the granted authorities but exclude any that start
+ * with {@code ROLE_SCOPE_} or {@code SCOPE_}.</li>
  * </ul>
  */
 @Slf4j(topic = "org.georchestra.gateway.security.oauth2")
 public class OAuth2UserMapper implements GeorchestraUserMapperExtension {
 
+    /**
+     * Attempts to resolve an OAuth2 authentication token into a
+     * {@link GeorchestraUser}.
+     *
+     * @param authToken The authentication token to resolve.
+     * @return An {@link Optional} containing the mapped user if the token is valid,
+     *         or {@link Optional#empty()} if it cannot be mapped.
+     */
     @Override
     public Optional<GeorchestraUser> resolve(Authentication authToken) {
-        return Optional.ofNullable(authToken)//
-                .filter(OAuth2AuthenticationToken.class::isInstance)//
-                .map(OAuth2AuthenticationToken.class::cast)//
-                .filter(tokenFilter())//
-                .flatMap(this::map);
+        return Optional.ofNullable(authToken).filter(OAuth2AuthenticationToken.class::isInstance)
+                .map(OAuth2AuthenticationToken.class::cast).filter(tokenFilter()).flatMap(this::map);
     }
 
+    /**
+     * Provides a predicate to filter which OAuth2 tokens should be processed.
+     * <p>
+     * The default implementation accepts all tokens.
+     * </p>
+     *
+     * @return A {@link Predicate} for filtering authentication tokens.
+     */
     protected Predicate<OAuth2AuthenticationToken> tokenFilter() {
         return token -> true;
     }
 
+    /**
+     * Maps an {@link OAuth2AuthenticationToken} to a {@link GeorchestraUser}.
+     *
+     * @param token The OAuth2 authentication token.
+     * @return An {@link Optional} containing the mapped {@link GeorchestraUser}.
+     */
     protected Optional<GeorchestraUser> map(OAuth2AuthenticationToken token) {
         logger().debug("Mapping {} authentication token from provider {}",
                 token.getPrincipal().getClass().getSimpleName(), token.getAuthorizedClientRegistrationId());
@@ -82,23 +98,29 @@ public class OAuth2UserMapper implements GeorchestraUserMapperExtension {
         user.setOAuth2Uid(token.getName());
 
         Map<String, Object> attributes = oAuth2User.getAttributes();
-
         List<String> roles = resolveRoles(oAuth2User.getAuthorities());
         String userName = token.getName();
         String login = (String) attributes.get("login");
 
         /*
-         * plain Oauth2 authentication user names are usually a number. The 'login'
-         * attribute usually carries over a more meaningful name, so use it in
-         * preference of userName if provided
+         * Plain OAuth2 authentication user names are often numeric identifiers. The
+         * 'login' attribute typically contains a more meaningful name, so it is used in
+         * preference to the username if available.
          */
         apply(user::setUsername, login, userName);
         apply(user::setEmail, (String) attributes.get("email"));
-        user.setRoles(new ArrayList<>(roles));// mutable
+        user.setRoles(new ArrayList<>(roles)); // mutable
 
         return Optional.of(user);
     }
 
+    /**
+     * Resolves roles from granted authorities while excluding OAuth2 scope-related
+     * authorities.
+     *
+     * @param authorities The collection of granted authorities.
+     * @return A list of resolved role names.
+     */
     protected List<String> resolveRoles(Collection<? extends GrantedAuthority> authorities) {
         return authorities.stream().map(GrantedAuthority::getAuthority).filter(scope -> {
             if (scope.startsWith("ROLE_SCOPE_") || scope.startsWith("SCOPE_")) {
@@ -109,15 +131,26 @@ public class OAuth2UserMapper implements GeorchestraUserMapperExtension {
         }).toList();
     }
 
+    /**
+     * Applies the first non-null candidate value to the specified setter function.
+     *
+     * @param setter     The setter function to apply.
+     * @param candidates A varargs list of candidate values.
+     */
     protected void apply(Consumer<String> setter, String... candidates) {
         for (String candidateValue : candidates) {
-            if (null != candidateValue) {
+            if (candidateValue != null) {
                 setter.accept(candidateValue);
                 break;
             }
         }
     }
 
+    /**
+     * Provides access to the class logger.
+     *
+     * @return The logger instance.
+     */
     protected Logger logger() {
         return log;
     }

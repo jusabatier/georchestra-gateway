@@ -19,7 +19,18 @@
 
 package org.georchestra.gateway.filter.headers.providers;
 
-import static org.georchestra.commons.security.SecurityHeaders.*;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_ADDRESS;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_EMAIL;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_EXTERNAL_AUTHENTICATION;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_FIRSTNAME;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_LASTNAME;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_NOTES;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_ORG;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_ROLES;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_TEL;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_TITLE;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_USERID;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_USERNAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;

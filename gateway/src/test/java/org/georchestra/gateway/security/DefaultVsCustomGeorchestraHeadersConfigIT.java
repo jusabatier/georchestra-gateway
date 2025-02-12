@@ -26,7 +26,6 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
-import com.google.common.base.Optional;
 
 @SpringBootTest(classes = GeorchestraGatewayApplication.class)
 @WireMockTest

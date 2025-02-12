@@ -19,10 +19,10 @@
 
 package org.georchestra.gateway.security.ldap.basic;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.georchestra.gateway.security.GeorchestraUserMapperExtension;
 import org.georchestra.security.api.UsersApi;
@@ -60,10 +60,9 @@ public class BasicLdapAuthenticatedUserMapper implements GeorchestraUserMapperEx
 
         GeorchestraUser user = new GeorchestraUser();
         user.setUsername(username);
-        user.setRoles(roles);
+        user.setRoles(new ArrayList<>(roles));//mutable
 
-        if (principal instanceof Person) {
-            Person person = (Person) principal;
+        if (principal instanceof Person person) {
             String description = person.getDescription();
             String givenName = person.getGivenName();
             String telephoneNumber = person.getTelephoneNumber();
@@ -75,6 +74,6 @@ public class BasicLdapAuthenticatedUserMapper implements GeorchestraUserMapperEx
     }
 
     protected List<String> resolveRoles(Collection<? extends GrantedAuthority> authorities) {
-        return authorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList());
+        return authorities.stream().map(GrantedAuthority::getAuthority).toList();
     }
 }

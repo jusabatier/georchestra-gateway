@@ -1,8 +1,6 @@
 package org.georchestra.gateway.security.ldap.extended;
 
 import org.georchestra.gateway.app.GeorchestraGatewayApplication;
-import org.georchestra.gateway.filter.headers.providers.JsonPayloadHeadersContributor;
-import org.georchestra.gateway.model.GatewayConfigProperties;
 import org.georchestra.testcontainers.ldap.GeorchestraLdapContainer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -10,19 +8,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import org.springframework.web.context.WebApplicationContext;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.utility.DockerImageName;
-
-import java.util.Arrays;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(classes = GeorchestraGatewayApplication.class)
 @ActiveProfiles({ "createaccount" })
@@ -46,7 +35,8 @@ public class ExtendedLdapAuthenticationIT {
         registry.add("testcontainers.georchestra.ldap.port", ldap::getMappedLdapPort);
     }
 
-    public @Test void testWhoami() {
+    @Test
+    void testWhoami() {
         testClient.get().uri("/whoami")//
                 .header("Authorization", "Basic dGVzdGFkbWluOnRlc3RhZG1pbg==") // testadmin:testadmin
                 .exchange()//
@@ -56,7 +46,8 @@ public class ExtendedLdapAuthenticationIT {
                 .jsonPath("$.GeorchestraUser.username").isEqualTo("testadmin");
     }
 
-    public @Test void testWhoamiUsingEmail() {
+    @Test
+    void testWhoamiUsingEmail() {
         testClient.get().uri("/whoami")//
                 .header("Authorization", "Basic cHNjK3Rlc3RhZG1pbkBnZW9yY2hlc3RyYS5vcmc6dGVzdGFkbWlu") // psc+testadmin@georchestra.org:testadmin
                 .exchange()//
@@ -66,7 +57,8 @@ public class ExtendedLdapAuthenticationIT {
                 .jsonPath("$.GeorchestraUser.username").isEqualTo("testadmin");
     }
 
-    public @Test void testWhoamiNoPasswordRevealed() {
+    @Test
+    void testWhoamiNoPasswordRevealed() {
         testClient.get().uri("/whoami")//
                 .header("Authorization", "Basic dGVzdGFkbWluOnRlc3RhZG1pbg==") // testadmin:testadmin
                 .exchange()//

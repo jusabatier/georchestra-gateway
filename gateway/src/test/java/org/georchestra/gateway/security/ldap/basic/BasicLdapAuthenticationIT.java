@@ -31,7 +31,8 @@ public class BasicLdapAuthenticationIT {
         ldap.stop();
     }
 
-    public @Test void testWhoamiNoPasswordRevealed() {
+    @Test
+    void testWhoamiNoPasswordRevealed() {
         testClient.get().uri("/whoami")//
                 .header("Authorization", "Basic dGVzdGFkbWluOnRlc3RhZG1pbg==") // testadmin:testadmin
                 .exchange()//

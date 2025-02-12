@@ -1,9 +1,13 @@
 package org.georchestra.gateway.rabbitmq;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
 import org.geonetwork.testcontainers.postgres.GeorchestraDatabaseContainer;
-import org.georchestra.ds.orgs.OrgsDao;
-import org.georchestra.ds.users.Account;
-import org.georchestra.ds.users.AccountDao;
 import org.georchestra.gateway.accounts.admin.AccountCreated;
 import org.georchestra.gateway.accounts.events.rabbitmq.RabbitmqAccountCreatedEventSender;
 import org.georchestra.gateway.accounts.events.rabbitmq.RabbitmqEventsListener;
@@ -11,22 +15,16 @@ import org.georchestra.gateway.app.GeorchestraGatewayApplication;
 import org.georchestra.security.model.GeorchestraUser;
 import org.georchestra.testcontainers.console.GeorchestraConsoleContainer;
 import org.georchestra.testcontainers.ldap.GeorchestraLdapContainer;
-import org.json.JSONObject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.amqp.core.Message;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
-import org.springframework.ldap.NameNotFoundException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.Testcontainers;
@@ -34,12 +32,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
-
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 /**
  * Integration tests for {@link RabbitmqAccountCreatedEventSender}.
@@ -54,22 +46,19 @@ import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 public class SendMessageRabbitmqIT {
 
     private @Autowired ApplicationEventPublisher eventPublisher;
-    private @Autowired ApplicationContext context;
     private @Autowired RabbitmqAccountCreatedEventSender sender;
-    private @Autowired AccountDao accountDao;
-    private @Autowired OrgsDao orgsDao;
 
-    private @Autowired RabbitmqEventsListener eventsListener;
-
-    private static final int smtpPort = 25;
+    private static final int SMTPPORT = 25;
 
     public static final GeorchestraLdapContainer ldap = new GeorchestraLdapContainer();
     public static final GeorchestraDatabaseContainer db = new GeorchestraDatabaseContainer();
     public static final GeorchestraConsoleContainer console = new GeorchestraConsoleContainer();
 
     public static RabbitMQContainer rabbitmq = new RabbitMQContainer(DockerImageName.parse("rabbitmq:3.12"));
+
+    @SuppressWarnings("resource") // closed at #shutDownContainers()
     public static GenericContainer<?> smtp = new GenericContainer<>("camptocamp/smtp-sink:latest")
-            .withExposedPorts(smtpPort);
+            .withExposedPorts(SMTPPORT);
 
     public static @BeforeAll void startUpContainers() {
         db.start();
@@ -78,7 +67,7 @@ public class SendMessageRabbitmqIT {
         rabbitmq.start();
 
         Testcontainers.exposeHostPorts(ldap.getMappedLdapPort(), db.getMappedDatabasePort(), rabbitmq.getAmqpPort(),
-                smtp.getMappedPort(smtpPort));
+                smtp.getMappedPort(SMTPPORT));
         System.setProperty("georchestra.gateway.security.events.rabbitmq.host", "localhost");
         System.setProperty("georchestra.gateway.security.events.rabbitmq.port", String.valueOf(rabbitmq.getAmqpPort()));
 
@@ -92,7 +81,7 @@ public class SendMessageRabbitmqIT {
                 .withEnv("rabbitmqUser", "guest")//
                 .withEnv("rabbitmqPassword", "guest")//
                 .withEnv("smtpHost", "host.testcontainers.internal")//
-                .withEnv("smtpPort", String.valueOf(smtp.getMappedPort(smtpPort))).withLogToStdOut();
+                .withEnv("smtpPort", String.valueOf(smtp.getMappedPort(SMTPPORT))).withLogToStdOut();
 
         console.start();
         System.setProperty("georchestra.console.url",
@@ -106,7 +95,8 @@ public class SendMessageRabbitmqIT {
         smtp.stop();
     }
 
-    public @Test void testReceivingMessageFromConsole(CapturedOutput output) throws Exception {
+    @Test
+    void testReceivingMessageFromConsole(CapturedOutput output) {
         assertNotNull(sender);
         GeorchestraUser user = new GeorchestraUser();
         user.setId(UUID.randomUUID().toString());
@@ -115,7 +105,7 @@ public class SendMessageRabbitmqIT {
         user.setEmail("testamqp@georchestra.org");
         user.setFirstName("John");
         user.setLastName("Doe");
-        user.setRoles(Arrays.asList("ADMINISTRATOR", "GN_ADMIN"));
+        user.setRoles(List.of("ADMINISTRATOR", "GN_ADMIN"));
         user.setTelephoneNumber("341444111");
         user.setTitle("developer");
         user.setNotes("user notes");

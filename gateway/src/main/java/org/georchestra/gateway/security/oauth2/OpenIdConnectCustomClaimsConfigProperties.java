@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.georchestra.security.model.GeorchestraUser;
@@ -87,19 +86,18 @@ public @Data class OpenIdConnectCustomClaimsConfigProperties {
 
         public void apply(Map<String, Object> claims, GeorchestraUser target) {
 
-            json().ifPresent(json -> {
-                List<String> rawValues = json.extract(claims);
-                List<String> roles = rawValues.stream().map(this::applyTransforms)
+            json().ifPresent(oidcClaimsConfig -> {
+                List<String> rawValues = oidcClaimsConfig.extract(claims);
+                List<String> oidcRoles = rawValues.stream().map(this::applyTransforms)
                         // make sure the resulting list is mutable, Stream.toList() is not
-                        .collect(Collectors.toList());
-                if (roles.isEmpty()) {
+                        .toList();
+                if (oidcRoles.isEmpty()) {
                     return;
                 }
-                if (append) {
-                    target.getRoles().addAll(0, roles);
-                } else {
-                    target.setRoles(roles);
+                if (!append) {
+                    target.getRoles().clear();
                 }
+                target.getRoles().addAll(0, oidcRoles);
             });
         }
 
@@ -166,7 +164,7 @@ public @Data class OpenIdConnectCustomClaimsConfigProperties {
             return this.path.stream()//
                     .map(jsonPathExpression -> this.extract(jsonPathExpression, claims))//
                     .flatMap(List::stream)//
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         private List<String> extract(final String jsonPathExpression, Map<String, Object> claims) {
@@ -189,18 +187,16 @@ public @Data class OpenIdConnectCustomClaimsConfigProperties {
 
             final List<?> list = (matched instanceof List) ? (List<?>) matched : List.of(matched);
 
-            List<String> values = IntStream.range(0, list.size())//
+            return IntStream.range(0, list.size())//
                     .mapToObj(list::get)//
                     .filter(Objects::nonNull)//
                     .map(value -> validateValueIsString(jsonPathExpression, value))//
-                    .collect(Collectors.toList());
-
-            return values;
+                    .toList();
         }
 
         private String validateValueIsString(final String jsonPathExpression, @NonNull Object v) {
-            if (v instanceof String)
-                return (String) v;
+            if (v instanceof String val)
+                return val;
 
             String msg = String.format("The JSONPath expression %s evaluates to %s instead of String. Value: %s",
                     jsonPathExpression, v.getClass().getCanonicalName(), v);

@@ -12,7 +12,8 @@ public class HeaderPreAuthenticationAutoConfigurationTest {
     private ApplicationContextRunner runner = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(HeaderPreAuthenticationAutoConfiguration.class));
 
-    public @Test void resolveHttpHeadersGeorchestraUserFilterIsAvailable() {
+    @Test
+    void resolveHttpHeadersGeorchestraUserFilterIsAvailable() {
         runner.withPropertyValues(""//
                 , "georchestra.gateway.security.header-authentication.enabled: true" //
         ).run(context -> {
@@ -21,7 +22,8 @@ public class HeaderPreAuthenticationAutoConfigurationTest {
         });
     }
 
-    public @Test void resolveHttpHeadersGeorchestraUserFilterIsUnavailable() {
+    @Test
+    void resolveHttpHeadersGeorchestraUserFilterIsUnavailable() {
         runner.withPropertyValues(""//
                 , "georchestra.gateway.security.header-authentication.enabled: false" //
         ).run(context -> {

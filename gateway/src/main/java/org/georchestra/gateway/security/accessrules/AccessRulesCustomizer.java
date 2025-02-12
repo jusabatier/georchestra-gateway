@@ -20,7 +20,6 @@ package org.georchestra.gateway.security.accessrules;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.georchestra.gateway.model.GatewayConfigProperties;
 import org.georchestra.gateway.model.RoleBasedAccessRule;
@@ -125,7 +124,7 @@ public class AccessRulesCustomizer implements ServerHttpSecurityCustomizer {
     }
 
     private List<String> resolveRoles(List<String> antPatterns, List<String> allowedRoles) {
-        return allowedRoles.stream().map(this::ensureRolePrefix).collect(Collectors.toList());
+        return allowedRoles.stream().map(this::ensureRolePrefix).toList();
     }
 
     @VisibleForTesting

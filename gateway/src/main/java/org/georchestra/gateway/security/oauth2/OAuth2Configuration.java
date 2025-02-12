@@ -24,11 +24,13 @@ import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.crypto.spec.SecretKeySpec;
 
-import org.georchestra.gateway.security.ServerHttpSecurityCustomizer;
 import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties;
+import org.georchestra.gateway.security.ServerHttpSecurityCustomizer;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -61,9 +63,6 @@ import com.nimbusds.jwt.JWTParser;
 import lombok.extern.slf4j.Slf4j;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.transport.ProxyProvider;
-
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties({ OAuth2ProxyConfigProperties.class, OpenIdConnectCustomClaimsConfigProperties.class,
@@ -139,7 +138,7 @@ public class OAuth2Configuration {
      * proxy.
      */
     @Bean
-    public ReactiveOAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> reactiveOAuth2AccessTokenResponseClient(
+    ReactiveOAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> reactiveOAuth2AccessTokenResponseClient(
             @Qualifier("oauth2WebClient") WebClient oauth2WebClient) {
 
         WebClientReactiveAuthorizationCodeTokenResponseClient client = new WebClientReactiveAuthorizationCodeTokenResponseClient();
@@ -152,9 +151,9 @@ public class OAuth2Configuration {
      * through an HTTP proxy
      */
     @Bean
-    public ReactiveJwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
+    ReactiveJwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
             @Qualifier("oauth2WebClient") WebClient oauth2WebClient) {
-        return (clientRegistration) -> (token) -> {
+        return clientRegistration -> token -> {
             try {
                 JWT parsedJwt = JWTParser.parse(token);
                 MacAlgorithm macAlgorithm = MacAlgorithm.from(parsedJwt.getHeader().getAlgorithm().getName());
@@ -184,25 +183,24 @@ public class OAuth2Configuration {
     // Some IDPs return claims with null value but Spring does not handle them
     private Map<String, Object> removeNullClaims(Map<String, Object> claims) {
         return claims.entrySet().stream().filter(entry -> entry.getValue() != null)
-                .collect(Collectors.toMap((entry) -> entry.getKey(), (entry) -> entry.getValue()));
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Bean
-    public DefaultReactiveOAuth2UserService reactiveOAuth2UserService(
+    DefaultReactiveOAuth2UserService reactiveOAuth2UserService(
             @Qualifier("oauth2WebClient") WebClient oauth2WebClient) {
 
         DefaultReactiveOAuth2UserService service = new DefaultReactiveOAuth2UserService();
         service.setWebClient(oauth2WebClient);
         return service;
-    };
+    }
 
     @Bean
-    public OidcReactiveOAuth2UserService oidcReactiveOAuth2UserService(
-            DefaultReactiveOAuth2UserService oauth2Delegate) {
+    OidcReactiveOAuth2UserService oidcReactiveOAuth2UserService(DefaultReactiveOAuth2UserService oauth2Delegate) {
         OidcReactiveOAuth2UserService oidUserService = new OidcReactiveOAuth2UserService();
         oidUserService.setOauth2UserService(oauth2Delegate);
         return oidUserService;
-    };
+    }
 
     /**
      * {@link WebClient} to use when performing HTTP POST requests to the OAuth2
@@ -217,7 +215,7 @@ public class OAuth2Configuration {
      *                    and {@literal http(s).proxyPort}), if any.
      */
     @Bean("oauth2WebClient")
-    public WebClient oauth2WebClient(OAuth2ProxyConfigProperties proxyConfig) {
+    WebClient oauth2WebClient(OAuth2ProxyConfigProperties proxyConfig) {
         final String proxyHost = proxyConfig.getHost();
         final Integer proxyPort = proxyConfig.getPort();
         final String proxyUser = proxyConfig.getUsername();
@@ -230,17 +228,14 @@ public class OAuth2Configuration {
             }
             log.info("Oauth2 client will use HTTP proxy {}:{}", proxyHost, proxyPort);
             httpClient = httpClient.proxy(proxy -> proxy.type(ProxyProvider.Proxy.HTTP).host(proxyHost).port(proxyPort)
-                    .username(proxyUser).password(user -> {
-                        return proxyPassword;
-                    }));
+                    .username(proxyUser).password(user -> proxyPassword));
         } else {
             log.info("Oauth2 client will use HTTP proxy from System properties if provided");
             httpClient = httpClient.proxyWithSystemProperties();
         }
         ReactorClientHttpConnector conn = new ReactorClientHttpConnector(httpClient);
 
-        WebClient webClient = WebClient.builder().clientConnector(conn).build();
-        return webClient;
+        return WebClient.builder().clientConnector(conn).build();
     }
 
 }

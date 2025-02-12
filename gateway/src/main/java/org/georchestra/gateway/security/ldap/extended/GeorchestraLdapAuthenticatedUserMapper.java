@@ -19,10 +19,9 @@
 
 package org.georchestra.gateway.security.ldap.extended;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.georchestra.gateway.security.GeorchestraUserMapperExtension;
@@ -84,9 +83,8 @@ class GeorchestraLdapAuthenticatedUserMapper implements GeorchestraUserMapperExt
 
         Stream<String> userRoles = user.getRoles().stream().map(this::normalize);
 
-        List<String> roles = Stream.concat(authorityRoleNames, userRoles).distinct().collect(Collectors.toList());
-
-        user.setRoles(roles);
+        List<String> roles = Stream.concat(authorityRoleNames, userRoles).distinct().toList();
+        user.setRoles(new ArrayList<>(roles));// mutable
         if (principal.getTimeBeforeExpiration() < Integer.MAX_VALUE) {
             user.setLdapWarn(true);
             user.setLdapRemainingDays(String.valueOf(principal.getTimeBeforeExpiration() / (60 * 60 * 24)));

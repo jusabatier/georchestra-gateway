@@ -19,13 +19,13 @@
 
 package org.georchestra.gateway.security.oauth2;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import org.georchestra.gateway.security.GeorchestraUserMapperExtension;
 import org.georchestra.security.model.GeorchestraUser;
@@ -94,20 +94,19 @@ public class OAuth2UserMapper implements GeorchestraUserMapperExtension {
          */
         apply(user::setUsername, login, userName);
         apply(user::setEmail, (String) attributes.get("email"));
-        user.setRoles(roles);
+        user.setRoles(new ArrayList<>(roles));// mutable
 
         return Optional.of(user);
     }
 
     protected List<String> resolveRoles(Collection<? extends GrantedAuthority> authorities) {
-        List<String> roles = authorities.stream().map(GrantedAuthority::getAuthority).filter(scope -> {
+        return authorities.stream().map(GrantedAuthority::getAuthority).filter(scope -> {
             if (scope.startsWith("ROLE_SCOPE_") || scope.startsWith("SCOPE_")) {
                 logger().debug("Excluding granted authority {}", scope);
                 return false;
             }
             return true;
-        }).collect(Collectors.toList());
-        return roles;
+        }).toList();
     }
 
     protected void apply(Consumer<String> setter, String... candidates) {

@@ -25,7 +25,8 @@ import org.springframework.context.annotation.Bean;
 @AutoConfiguration
 public class RoutePredicateFactoriesAutoConfiguration {
 
-    public @Bean QueryParamRoutePredicateFactory queryParamRoutePredicateFactory() {
+    @Bean
+    QueryParamRoutePredicateFactory queryParamRoutePredicateFactory() {
         return new QueryParamRoutePredicateFactory();
     }
 }

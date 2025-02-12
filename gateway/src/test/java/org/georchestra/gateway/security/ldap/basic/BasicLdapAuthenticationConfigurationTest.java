@@ -38,7 +38,8 @@ class BasicLdapAuthenticationConfigurationTest {
             .withConfiguration(UserConfigurations.of(BasicLdapAuthenticationConfiguration.class));
 
     @SuppressWarnings("unchecked")
-    public @Test void contextContributions_empty_config() {
+    @Test
+    void contextContributions_empty_config() {
         runner.run(context -> {
             assertThat(context).hasNotFailed();
             assertThat(context).getBean("enabledSimpleLdapConfigs").isInstanceOf(List.class);
@@ -51,7 +52,8 @@ class BasicLdapAuthenticationConfigurationTest {
     }
 
     @SuppressWarnings("unchecked")
-    public @Test void contextContributions_single_config() {
+    @Test
+    void contextContributions_single_config() {
         runner.withPropertyValues(""//
         // Basic LDAP config
                 , "georchestra.gateway.security.ldap.ldap1.enabled: true" //
@@ -77,7 +79,8 @@ class BasicLdapAuthenticationConfigurationTest {
     }
 
     @SuppressWarnings("unchecked")
-    public @Test void contextContributions_multiple_configs() {
+    @Test
+    void contextContributions_multiple_configs() {
         runner.withPropertyValues(""//
         // Basic LDAP config
                 , "georchestra.gateway.security.ldap.ldap1.enabled: true" //

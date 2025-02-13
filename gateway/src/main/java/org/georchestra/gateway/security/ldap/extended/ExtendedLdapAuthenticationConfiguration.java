@@ -25,20 +25,23 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.georchestra.ds.orgs.OrgsDao;
 import org.georchestra.ds.orgs.OrgsDaoImpl;
 import org.georchestra.ds.roles.RoleDao;
 import org.georchestra.ds.roles.RoleDaoImpl;
 import org.georchestra.ds.roles.RoleProtected;
-import org.georchestra.ds.security.*;
+import org.georchestra.ds.security.OrganizationMapperImpl;
+import org.georchestra.ds.security.OrganizationsApiImpl;
+import org.georchestra.ds.security.UserMapper;
+import org.georchestra.ds.security.UserMapperImpl;
+import org.georchestra.ds.security.UsersApiImpl;
 import org.georchestra.ds.users.AccountDao;
 import org.georchestra.ds.users.AccountDaoImpl;
 import org.georchestra.ds.users.UserRule;
-import org.georchestra.gateway.security.GeorchestraUserMapperExtension;
 import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties;
 import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties.Server;
+import org.georchestra.gateway.security.GeorchestraUserMapperExtension;
 import org.georchestra.gateway.security.ldap.basic.LdapAuthenticatorProviderBuilder;
 import org.georchestra.security.api.OrganizationsApi;
 import org.georchestra.security.api.UsersApi;
@@ -78,7 +81,7 @@ public class ExtendedLdapAuthenticationConfiguration {
 
     @Bean
     List<GeorchestraLdapAuthenticationProvider> extendedLdapAuthenticationProviders(List<ExtendedLdapConfig> configs) {
-        return configs.stream().map(this::createLdapProvider).collect(Collectors.toList());
+        return configs.stream().map(this::createLdapProvider).toList();
     }
 
     private GeorchestraLdapAuthenticationProvider createLdapProvider(ExtendedLdapConfig config) {

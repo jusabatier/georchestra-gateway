@@ -22,7 +22,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.WeakHashMap;
 
-import org.georchestra.ds.users.DuplicatedEmailException;
 import org.georchestra.gateway.security.GeorchestraUserCustomizerExtension;
 import org.georchestra.gateway.security.exceptions.DuplicatedEmailFoundException;
 import org.georchestra.security.model.GeorchestraUser;

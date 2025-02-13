@@ -19,7 +19,6 @@
 package org.georchestra.gateway.security.ldap;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties;
@@ -91,13 +90,12 @@ public class LdapAuthenticationConfiguration {
     }
 
     @Bean
-    public ServerHttpSecurityCustomizer ldapHttpBasicLoginFormEnablerExtension() {
+    ServerHttpSecurityCustomizer ldapHttpBasicLoginFormEnablerExtension() {
         return new LDAPAuthenticationCustomizer();
     }
 
     @Bean
-    public AuthenticationWebFilter ldapAuthenticationWebFilter(
-            ReactiveAuthenticationManager ldapAuthenticationManager) {
+    AuthenticationWebFilter ldapAuthenticationWebFilter(ReactiveAuthenticationManager ldapAuthenticationManager) {
 
         AuthenticationWebFilter ldapAuthFilter = new AuthenticationWebFilter(ldapAuthenticationManager);
         ldapAuthFilter.setRequiresAuthenticationMatcher(ServerWebExchangeMatchers.pathMatchers("/auth/login"));
@@ -105,11 +103,11 @@ public class LdapAuthenticationConfiguration {
     }
 
     @Bean
-    public ReactiveAuthenticationManager ldapAuthenticationManager(List<BasicLdapAuthenticationProvider> basic,
+    ReactiveAuthenticationManager ldapAuthenticationManager(List<BasicLdapAuthenticationProvider> basic,
             List<GeorchestraLdapAuthenticationProvider> extended) {
 
         List<AuthenticationProvider> flattened = Stream.concat(basic.stream(), extended.stream())
-                .map(AuthenticationProvider.class::cast).collect(Collectors.toList());
+                .map(AuthenticationProvider.class::cast).toList();
 
         if (flattened.isEmpty())
             return null;

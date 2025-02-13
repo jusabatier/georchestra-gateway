@@ -18,6 +18,21 @@
  */
 package org.georchestra.gateway.filter.headers.providers;
 
+import static org.georchestra.commons.security.SecurityHeaders.SEC_ADDRESS;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_EMAIL;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_EXTERNAL_AUTHENTICATION;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_FIRSTNAME;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_LASTNAME;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_LASTUPDATED;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_LDAP_REMAINING_DAYS;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_NOTES;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_ORG;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_ROLES;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_TEL;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_TITLE;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_USERID;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_USERNAME;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -29,8 +44,6 @@ import org.georchestra.security.model.GeorchestraUser;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.server.ServerWebExchange;
 
-import static org.georchestra.commons.security.SecurityHeaders.*;
-
 /**
  * Contributes user-related {@literal sec-*} request headers.
  * 
@@ -40,34 +53,32 @@ import static org.georchestra.commons.security.SecurityHeaders.*;
 public class GeorchestraUserHeadersContributor extends HeaderContributor {
 
     public @Override Consumer<HttpHeaders> prepare(ServerWebExchange exchange) {
-        return headers -> {
-            GeorchestraTargetConfig.getTarget(exchange)//
-                    .map(GeorchestraTargetConfig::headers)//
-                    .ifPresent(mappings -> {
-                        Optional<GeorchestraUser> user = GeorchestraUsers.resolve(exchange);
-                        add(headers, SEC_USERID, mappings.getUserid(), user.map(GeorchestraUser::getId));
-                        add(headers, SEC_USERNAME, mappings.getUsername(), user.map(GeorchestraUser::getUsername));
-                        add(headers, SEC_ORG, mappings.getOrg(), user.map(GeorchestraUser::getOrganization));
-                        add(headers, SEC_EMAIL, mappings.getEmail(), user.map(GeorchestraUser::getEmail));
-                        add(headers, SEC_FIRSTNAME, mappings.getFirstname(), user.map(GeorchestraUser::getFirstName));
-                        add(headers, SEC_LASTNAME, mappings.getLastname(), user.map(GeorchestraUser::getLastName));
-                        add(headers, SEC_TEL, mappings.getTel(), user.map(GeorchestraUser::getTelephoneNumber));
+        return headers -> GeorchestraTargetConfig.getTarget(exchange)//
+                .map(GeorchestraTargetConfig::headers)//
+                .ifPresent(mappings -> {
+                    Optional<GeorchestraUser> user = GeorchestraUsers.resolve(exchange);
+                    add(headers, SEC_USERID, mappings.getUserid(), user.map(GeorchestraUser::getId));
+                    add(headers, SEC_USERNAME, mappings.getUsername(), user.map(GeorchestraUser::getUsername));
+                    add(headers, SEC_ORG, mappings.getOrg(), user.map(GeorchestraUser::getOrganization));
+                    add(headers, SEC_EMAIL, mappings.getEmail(), user.map(GeorchestraUser::getEmail));
+                    add(headers, SEC_FIRSTNAME, mappings.getFirstname(), user.map(GeorchestraUser::getFirstName));
+                    add(headers, SEC_LASTNAME, mappings.getLastname(), user.map(GeorchestraUser::getLastName));
+                    add(headers, SEC_TEL, mappings.getTel(), user.map(GeorchestraUser::getTelephoneNumber));
 
-                        List<String> roles = user.map(GeorchestraUser::getRoles).orElse(List.of());
+                    List<String> roles = user.map(GeorchestraUser::getRoles).orElse(List.of());
 
-                        add(headers, SEC_ROLES, mappings.getRoles(), roles);
+                    add(headers, SEC_ROLES, mappings.getRoles(), roles);
 
-                        add(headers, SEC_LASTUPDATED, mappings.getLastUpdated(),
-                                user.map(GeorchestraUser::getLastUpdated));
-                        add(headers, SEC_ADDRESS, mappings.getAddress(), user.map(GeorchestraUser::getPostalAddress));
-                        add(headers, SEC_TITLE, mappings.getTitle(), user.map(GeorchestraUser::getTitle));
-                        add(headers, SEC_NOTES, mappings.getNotes(), user.map(GeorchestraUser::getNotes));
-                        add(headers, SEC_LDAP_REMAINING_DAYS, Optional
-                                .of(user.isPresent() && user.get().getLdapWarn() != null && user.get().getLdapWarn()),
-                                user.map(GeorchestraUser::getLdapRemainingDays));
-                        add(headers, SEC_EXTERNAL_AUTHENTICATION, Optional.of(user.isPresent()),
-                                String.valueOf(user.isPresent() && user.get().getIsExternalAuth()));
-                    });
-        };
+                    add(headers, SEC_LASTUPDATED, mappings.getLastUpdated(), user.map(GeorchestraUser::getLastUpdated));
+                    add(headers, SEC_ADDRESS, mappings.getAddress(), user.map(GeorchestraUser::getPostalAddress));
+                    add(headers, SEC_TITLE, mappings.getTitle(), user.map(GeorchestraUser::getTitle));
+                    add(headers, SEC_NOTES, mappings.getNotes(), user.map(GeorchestraUser::getNotes));
+                    add(headers, SEC_LDAP_REMAINING_DAYS,
+                            Optional.of(
+                                    user.isPresent() && user.get().getLdapWarn() != null && user.get().getLdapWarn()),
+                            user.map(GeorchestraUser::getLdapRemainingDays));
+                    add(headers, SEC_EXTERNAL_AUTHENTICATION, Optional.of(user.isPresent()),
+                            String.valueOf(user.isPresent() && user.get().getIsExternalAuth()));
+                });
     }
 }

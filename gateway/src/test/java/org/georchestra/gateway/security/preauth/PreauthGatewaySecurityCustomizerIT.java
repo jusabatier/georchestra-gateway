@@ -1,38 +1,35 @@
 package org.georchestra.gateway.security.preauth;
 
-import com.github.tomakehurst.wiremock.client.WireMock;
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
-import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import lombok.extern.slf4j.Slf4j;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.ok;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_EXTERNAL_AUTHENTICATION;
+import static org.georchestra.commons.security.SecurityHeaders.SEC_ROLES;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.net.URI;
+import java.util.List;
+
 import org.georchestra.gateway.app.GeorchestraGatewayApplication;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.cloud.gateway.route.Route;
-import org.springframework.cloud.gateway.route.RouteDefinition;
-import org.springframework.cloud.gateway.route.RouteLocator;
-import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
-import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static com.github.tomakehurst.wiremock.client.WireMock.ok;
-import static org.georchestra.commons.security.SecurityHeaders.SEC_EXTERNAL_AUTHENTICATION;
-import static org.georchestra.commons.security.SecurityHeaders.SEC_ROLES;
-import static org.junit.jupiter.api.Assertions.*;
+import lombok.extern.slf4j.Slf4j;
 
 @SpringBootTest(classes = GeorchestraGatewayApplication.class, webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureWebTestClient(timeout = "PT20S")
@@ -58,10 +55,10 @@ class PreauthGatewaySecurityCustomizerIT {
         registry.add("spring.cloud.gateway.routes[0].predicates[0]", () -> "Path=/test");
     }
 
-    private @Autowired RouteLocator routeLocator;
     private @Autowired WebTestClient testClient;
 
-    public @Test void testProxifiedRequestNoPreauthHeaders() {
+    @Test
+    void testProxifiedRequestNoPreauthHeaders() {
         mockService.stubFor(get(urlMatching("/test"))//
                 .willReturn(ok()));
 
@@ -69,13 +66,13 @@ class PreauthGatewaySecurityCustomizerIT {
 
         List<LoggedRequest> requests = mockService.findAll(getRequestedFor(urlEqualTo("/test")));
         requests.forEach(req -> {
-            assertTrue(req.getHeaders().keys().stream().filter(h -> h.startsWith("preauth-"))
-                    .collect(Collectors.toList()).isEmpty());
+            assertTrue(req.getHeaders().keys().stream().filter(h -> h.startsWith("preauth-")).toList().isEmpty());
 
         });
     }
 
-    public @Test void testProxifiedRequestPreauthSentButSanitized() {
+    @Test
+    void testProxifiedRequestPreauthSentButSanitized() {
         mockService.stubFor(get(urlMatching("/test"))//
                 .willReturn(ok()));
 
@@ -91,14 +88,14 @@ class PreauthGatewaySecurityCustomizerIT {
         List<LoggedRequest> requests = mockService.findAll(getRequestedFor(urlEqualTo("/test")));
         requests.forEach(req -> {
             // no 'preauth-*' headers in the received request
-            assertTrue(req.getHeaders().keys().stream().filter(h -> h.startsWith("preauth-"))
-                    .collect(Collectors.toList()).isEmpty());
+            assertTrue(req.getHeaders().keys().stream().filter(h -> h.startsWith("preauth-")).toList().isEmpty());
             // but still the regular sec-* ones
             assertFalse(req.getHeader(SEC_ROLES).isEmpty());
         });
     }
 
-    public @Test void testProxifiedRequestWithExternalAuthenticationHeaderAttribute() {
+    @Test
+    void testProxifiedRequestWithExternalAuthenticationHeaderAttribute() {
         mockService.stubFor(get(urlMatching("/test"))//
                 .willReturn(ok()));
 

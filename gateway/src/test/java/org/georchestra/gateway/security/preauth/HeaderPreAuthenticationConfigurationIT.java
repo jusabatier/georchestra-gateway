@@ -50,7 +50,8 @@ public class HeaderPreAuthenticationConfigurationIT {
         return spec;
     }
 
-    public @Test void test_preauthenticatedHeadersAccess() {
+    @Test
+    void test_preauthenticatedHeadersAccess() {
         assertNotNull(context.getBean(PreauthGatewaySecurityCustomizer.class));
         assertNotNull(context.getBean(PreauthenticatedUserMapperExtension.class));
 
@@ -62,7 +63,8 @@ public class HeaderPreAuthenticationConfigurationIT {
                 .isNotEmpty();
     }
 
-    public @Test void test_preauthenticatedHeadersAccess_case_insensitive() {
+    @Test
+    void test_preauthenticatedHeadersAccess_case_insensitive() {
         assertNotNull(context.getBean(PreauthGatewaySecurityCustomizer.class));
         assertNotNull(context.getBean(PreauthenticatedUserMapperExtension.class));
 
@@ -75,7 +77,8 @@ public class HeaderPreAuthenticationConfigurationIT {
                 .isNotEmpty();
     }
 
-    public @Test void test_preauthenticatedHeadersAccess_isAuthenticated() {
+    @Test
+    void test_preauthenticatedHeadersAccess_isAuthenticated() {
         assertNotNull(context.getBean(PreauthGatewaySecurityCustomizer.class));
         assertNotNull(context.getBean(PreauthenticatedUserMapperExtension.class));
 

@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties;
@@ -89,7 +88,7 @@ class AtLeastOneLdapDatasourceEnabledCondition extends SpringBootCondition {
         Set<String> names = new HashSet<>();
         for (String p : propertyNames) {
             String value = environment.getProperty(p);
-            if (Boolean.valueOf(value)) {
+            if (Boolean.parseBoolean(value)) {
                 Matcher matcher = pattern.matcher(p);
                 if (matcher.matches()) {
                     String name = matcher.group(1);
@@ -110,7 +109,7 @@ class AtLeastOneLdapDatasourceEnabledCondition extends SpringBootCondition {
                 .map(EnumerablePropertySource::getPropertyNames)//
                 .flatMap(Stream::of)//
                 .filter(filter)//
-                .collect(Collectors.toList());
+                .toList();
     }
 
 }

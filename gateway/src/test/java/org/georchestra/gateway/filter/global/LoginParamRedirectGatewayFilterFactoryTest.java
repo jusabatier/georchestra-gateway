@@ -30,7 +30,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 
-import org.georchestra.gateway.autoconfigure.app.FiltersAutoConfiguration;
 import org.georchestra.gateway.filter.global.LoginParamRedirectGatewayFilterFactory.LoginParamRedirectGatewayFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

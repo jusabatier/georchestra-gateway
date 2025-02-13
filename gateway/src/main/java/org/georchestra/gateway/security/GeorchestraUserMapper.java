@@ -21,7 +21,6 @@ package org.georchestra.gateway.security;
 import java.util.List;
 import java.util.Optional;
 
-import org.georchestra.ds.users.DuplicatedEmailException;
 import org.georchestra.gateway.model.GeorchestraUsers;
 import org.georchestra.gateway.security.exceptions.DuplicatedEmailFoundException;
 import org.georchestra.security.model.GeorchestraUser;

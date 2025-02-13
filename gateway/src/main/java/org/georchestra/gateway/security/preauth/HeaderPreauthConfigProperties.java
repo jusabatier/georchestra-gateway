@@ -18,8 +18,6 @@
  */
 package org.georchestra.gateway.security.preauth;
 
-import java.util.List;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import lombok.Data;

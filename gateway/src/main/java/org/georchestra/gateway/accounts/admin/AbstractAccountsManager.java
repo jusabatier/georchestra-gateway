@@ -18,15 +18,16 @@
  */
 package org.georchestra.gateway.accounts.admin;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import java.util.Optional;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import org.georchestra.gateway.security.exceptions.DuplicatedEmailFoundException;
 import org.georchestra.security.model.GeorchestraUser;
 import org.springframework.context.ApplicationEventPublisher;
 
-import java.util.Optional;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public abstract class AbstractAccountsManager implements AccountManager {

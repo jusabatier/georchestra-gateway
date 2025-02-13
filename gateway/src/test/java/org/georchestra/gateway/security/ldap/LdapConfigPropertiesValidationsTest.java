@@ -49,14 +49,16 @@ class LdapConfigPropertiesValidationsTest {
     private ApplicationContextRunner runner = new ApplicationContextRunner()
             .withUserConfiguration(EnableConfigProps.class);
 
-    public @Test void no_ldap_configs() {
+    @Test
+    void no_ldap_configs() {
         runner.run(context -> {
             assertThat(context).hasSingleBean(GeorchestraGatewaySecurityConfigProperties.class);
             assertThat(context.getBean(GeorchestraGatewaySecurityConfigProperties.class).getLdap()).isEmpty();
         });
     }
 
-    public @Test void no_ldap_enabled() {
+    @Test
+    void no_ldap_enabled() {
         runner.withPropertyValues(//
                 "georchestra.gateway.security.ldap.ldap1.enabled: false" //
                 , "georchestra.gateway.security.ldap.ldap2.enabled: false" //
@@ -70,7 +72,8 @@ class LdapConfigPropertiesValidationsTest {
         });
     }
 
-    public @Test void validates_common_url_is_mandatory_if_enabled() {
+    @Test
+    void validates_common_url_is_mandatory_if_enabled() {
         runner.withPropertyValues(""//
                 , "georchestra.gateway.security.ldap.basic1.enabled: true" //
                 , "georchestra.gateway.security.ldap.basic1.url:" //
@@ -89,7 +92,8 @@ class LdapConfigPropertiesValidationsTest {
         });
     }
 
-    public @Test void validates_common_url_not_set_does_not_fail_if_not_enabled() {
+    @Test
+    void validates_common_url_not_set_does_not_fail_if_not_enabled() {
         runner.withPropertyValues(""//
                 , "georchestra.gateway.security.ldap.basic1.enabled: false" //
                 , "georchestra.gateway.security.ldap.basic1.url:" //
@@ -98,7 +102,8 @@ class LdapConfigPropertiesValidationsTest {
         });
     }
 
-    public @Test void validates_basic_and_extended_baseDn_is_mandatory() {
+    @Test
+    void validates_basic_and_extended_baseDn_is_mandatory() {
         runner.withPropertyValues(""//
         // Basic LDAP config
                 , "georchestra.gateway.security.ldap.ldap1.enabled: true" //
@@ -116,7 +121,8 @@ class LdapConfigPropertiesValidationsTest {
         });
     }
 
-    public @Test void validates_basic_and_extended_users_rdn_is_mandatory() {
+    @Test
+    void validates_basic_and_extended_users_rdn_is_mandatory() {
         runner.withPropertyValues(""//
         // Basic LDAP config
                 , "georchestra.gateway.security.ldap.ldap1.enabled: true" //
@@ -137,7 +143,8 @@ class LdapConfigPropertiesValidationsTest {
         });
     }
 
-    public @Test void validates_basic_and_extended_users_searchFilter_is_mandatory() {
+    @Test
+    void validates_basic_and_extended_users_searchFilter_is_mandatory() {
         runner.withPropertyValues(""//
         // Basic LDAP config
                 , "georchestra.gateway.security.ldap.ldap1.enabled: true" //
@@ -160,7 +167,8 @@ class LdapConfigPropertiesValidationsTest {
         });
     }
 
-    public @Test void validates_basic_and_extended_roles_rdn_is_mandatory() {
+    @Test
+    void validates_basic_and_extended_roles_rdn_is_mandatory() {
         runner.withPropertyValues(""//
         // Basic LDAP config
                 , "georchestra.gateway.security.ldap.ldap1.enabled: true" //
@@ -185,7 +193,8 @@ class LdapConfigPropertiesValidationsTest {
         });
     }
 
-    public @Test void validates_basic_and_extended_roles_searchFilter_is_mandatory() {
+    @Test
+    void validates_basic_and_extended_roles_searchFilter_is_mandatory() {
         runner.withPropertyValues(""//
         // Basic LDAP config
                 , "georchestra.gateway.security.ldap.ldap1.enabled: true" //
@@ -212,7 +221,8 @@ class LdapConfigPropertiesValidationsTest {
         });
     }
 
-    public @Test void validates_extended_orgs_rdn_is_mandatory() {
+    @Test
+    void validates_extended_orgs_rdn_is_mandatory() {
         runner.withPropertyValues(""//
                 , "georchestra.gateway.security.ldap.extended1.enabled: true" //
                 , "georchestra.gateway.security.ldap.extended1.extended: true" //
@@ -230,7 +240,8 @@ class LdapConfigPropertiesValidationsTest {
         });
     }
 
-    public @Test void valid_single_config_basic() {
+    @Test
+    void valid_single_config_basic() {
         runner.withPropertyValues(""//
         // Basic LDAP config
                 , "georchestra.gateway.security.ldap.ldap1.enabled: true" //
@@ -259,7 +270,8 @@ class LdapConfigPropertiesValidationsTest {
         });
     }
 
-    public @Test void valid_single_config_extended() {
+    @Test
+    void valid_single_config_extended() {
         runner.withPropertyValues(""//
         // Basic LDAP config
                 , "georchestra.gateway.security.ldap.ldap1.enabled: true" //
@@ -291,7 +303,8 @@ class LdapConfigPropertiesValidationsTest {
         });
     }
 
-    public @Test void valid_multiple_configs() {
+    @Test
+    void valid_multiple_configs() {
         runner.withPropertyValues(""//
         // Basic LDAP config
                 , "georchestra.gateway.security.ldap.ldap1.enabled: true" //

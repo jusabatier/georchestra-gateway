@@ -18,10 +18,10 @@
  */
 package org.georchestra.gateway.accounts.admin.ldap;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.georchestra.ds.DataServiceException;
@@ -85,8 +85,8 @@ class LdapAccountsManager extends AbstractAccountsManager {
 
     private GeorchestraUser ensureRolesPrefixed(GeorchestraUser user) {
         List<String> roles = user.getRoles().stream().filter(Objects::nonNull)
-                .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r).collect(Collectors.toList());
-        user.setRoles(roles);
+                .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r).toList();
+        user.setRoles(new ArrayList<>(roles));
         return user;
     }
 
@@ -108,7 +108,7 @@ class LdapAccountsManager extends AbstractAccountsManager {
         } catch (IllegalStateException orgError) {
             log.error("Error when trying to create / update the organisation {}, reverting the account creation",
                     newAccount.getOrg(), orgError);
-            rollbackAccount(newAccount, newAccount.getOrg());
+            rollbackAccount(newAccount);
             throw orgError;
         }
 
@@ -208,7 +208,7 @@ class LdapAccountsManager extends AbstractAccountsManager {
         }
     }
 
-    private void rollbackAccount(Account newAccount, final String orgId) {
+    private void rollbackAccount(Account newAccount) {
         try {// roll-back account
             accountDao.delete(newAccount);
         } catch (NameNotFoundException | DataServiceException rollbackError) {

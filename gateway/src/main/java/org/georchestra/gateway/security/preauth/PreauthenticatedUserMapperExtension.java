@@ -21,7 +21,6 @@ package org.georchestra.gateway.security.preauth;
 import java.util.Map;
 import java.util.Optional;
 
-import lombok.RequiredArgsConstructor;
 import org.georchestra.gateway.security.GeorchestraUserMapperExtension;
 import org.georchestra.security.model.GeorchestraUser;
 import org.springframework.security.core.Authentication;

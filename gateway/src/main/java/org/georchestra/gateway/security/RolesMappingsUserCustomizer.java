@@ -74,7 +74,7 @@ public class RolesMappingsUserCustomizer implements GeorchestraUserCustomizerExt
                 .stream()//
                 .map(e -> new Matcher(toPattern(e.getKey()), e.getValue()))//
                 .peek(m -> log.info("Loaded role mapping {}", m))//
-                .collect(Collectors.toList());
+                .toList();
     }
 
     static Pattern toPattern(String role) {
@@ -88,7 +88,7 @@ public class RolesMappingsUserCustomizer implements GeorchestraUserCustomizerExt
         Set<String> additionalRoles = computeAdditionalRoles(mappedUser.getRoles());
         if (!additionalRoles.isEmpty()) {
             additionalRoles.addAll(mappedUser.getRoles());
-            mappedUser.setRoles(new ArrayList<>(additionalRoles));
+            mappedUser.setRoles(new ArrayList<>(additionalRoles));// mutable
         }
         return mappedUser;
     }
@@ -107,7 +107,7 @@ public class RolesMappingsUserCustomizer implements GeorchestraUserCustomizerExt
     private List<String> computeAdditionalRoles(@NonNull String authenticatedRole) {
 
         List<String> roles = rolesMappings.stream().filter(m -> m.matches(authenticatedRole))
-                .map(Matcher::getExtraRoles).flatMap(List::stream).collect(Collectors.toList());
+                .map(Matcher::getExtraRoles).flatMap(List::stream).toList();
 
         log.info("Computed additional roles for {}: {}", authenticatedRole, roles);
         return roles;

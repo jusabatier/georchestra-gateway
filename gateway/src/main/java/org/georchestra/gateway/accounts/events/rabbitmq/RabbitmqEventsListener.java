@@ -22,10 +22,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.json.JSONObject;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageListener;
+
+import com.google.common.annotations.VisibleForTesting;
 
 import lombok.extern.slf4j.Slf4j;
 

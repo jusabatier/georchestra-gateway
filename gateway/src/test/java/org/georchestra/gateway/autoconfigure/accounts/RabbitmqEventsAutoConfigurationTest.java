@@ -2,8 +2,6 @@ package org.georchestra.gateway.autoconfigure.accounts;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.assertj.core.api.InstanceOfAssertFactories;
-import org.assertj.core.api.InstanceOfAssertFactory;
 import org.georchestra.gateway.accounts.events.rabbitmq.RabbitmqAccountCreatedEventSender;
 import org.georchestra.gateway.accounts.events.rabbitmq.RabbitmqEventsConfiguration;
 import org.junit.jupiter.api.Test;

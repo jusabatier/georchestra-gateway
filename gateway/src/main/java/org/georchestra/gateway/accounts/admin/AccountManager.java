@@ -18,13 +18,13 @@
  */
 package org.georchestra.gateway.accounts.admin;
 
+import java.util.Optional;
+
 import org.georchestra.gateway.security.GeorchestraUserMapper;
 import org.georchestra.gateway.security.ResolveGeorchestraUserGlobalFilter;
 import org.georchestra.security.model.GeorchestraUser;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
-
-import java.util.Optional;
 
 /**
  * @see CreateAccountUserCustomizer

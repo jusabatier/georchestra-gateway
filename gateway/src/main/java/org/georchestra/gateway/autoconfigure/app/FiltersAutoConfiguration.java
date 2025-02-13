@@ -60,16 +60,19 @@ public class FiltersAutoConfiguration {
      * Custom gateway predicate factory to support matching by regular expressions
      * on both name and value of query parameters
      */
-    public @Bean RegExpQueryRoutePredicateFactory regExpQueryRoutePredicateFactory() {
+    @Bean
+    RegExpQueryRoutePredicateFactory regExpQueryRoutePredicateFactory() {
         return new RegExpQueryRoutePredicateFactory();
     }
 
     /** Allows to enable routes only if a given spring profile is enabled */
-    public @Bean RouteProfileGatewayFilterFactory routeProfileGatewayFilterFactory() {
+    @Bean
+    RouteProfileGatewayFilterFactory routeProfileGatewayFilterFactory() {
         return new RouteProfileGatewayFilterFactory();
     }
 
-    public @Bean StripBasePathGatewayFilterFactory stripBasePathGatewayFilterFactory() {
+    @Bean
+    StripBasePathGatewayFilterFactory stripBasePathGatewayFilterFactory() {
         return new StripBasePathGatewayFilterFactory();
     }
 

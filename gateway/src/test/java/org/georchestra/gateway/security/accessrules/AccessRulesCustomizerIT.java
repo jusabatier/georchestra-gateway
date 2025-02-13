@@ -128,7 +128,8 @@ class AccessRulesCustomizerIT {
      * }
      * </pre>
      */
-    public @Test void testSimpleMapping_anonymous() {
+    @Test
+    void testSimpleMapping_anonymous() {
         mockService.stubFor(get(urlMatching("/header(/.*)?"))//
                 .withHeader("sec-proxy", equalTo("true"))//
                 .willReturn(ok()));
@@ -150,7 +151,8 @@ class AccessRulesCustomizerIT {
      *     anonymous: false
      * }
      */
-    public @Test void testService_unauthorized_if_not_logged_in_and_requires_any_authenticated_user() {
+    @Test
+    void testService_unauthorized_if_not_logged_in_and_requires_any_authenticated_user() {
         mockService.stubFor(get(urlMatching("/import(/.*)?")).willReturn(noContent()));
 
         testClient.get().uri("/import")//
@@ -172,7 +174,8 @@ class AccessRulesCustomizerIT {
      * }
      */
     @WithMockUser(authorities = { "ROLE_DOESNTMATTER" })
-    public @Test void testService_requires_any_authenticated_user() {
+    @Test
+    void testService_requires_any_authenticated_user() {
         mockService.stubFor(get(urlMatching("/import(/.*)?")).willReturn(ok()));
 
         testClient.get().uri("/import")//
@@ -196,7 +199,8 @@ class AccessRulesCustomizerIT {
      * }
      */
     @WithMockUser(authorities = { "ROLE_USER", "ROLE_EDITOR" })
-    public @Test void testService_requires_specific_role_forbidden_for_non_matching_roles() {
+    @Test
+    void testService_requires_specific_role_forbidden_for_non_matching_roles() {
         mockService.stubFor(get(urlMatching("/analytics(/.*)?")).willReturn(ok()));
 
         testClient.get().uri("/analytics")//
@@ -218,7 +222,8 @@ class AccessRulesCustomizerIT {
      * }
      */
     @WithMockUser(authorities = { "ROLE_USER", "ROLE_ORGADMIN" })
-    public @Test void testService_requires_specific_role_allowed_for_matching_roles() {
+    @Test
+    void testService_requires_specific_role_allowed_for_matching_roles() {
         mockService.stubFor(get(urlMatching("/analytics(/.*)?")).willReturn(ok()));
 
         testClient.get().uri("/analytics")//
@@ -241,7 +246,8 @@ class AccessRulesCustomizerIT {
      *     allowed-roles: SUPERUSER,ORGADMIN
      * }
      */
-    public @Test void testService_unauthorized_if_not_logged_in_and_requires_role() {
+    @Test
+    void testService_unauthorized_if_not_logged_in_and_requires_role() {
         mockService.stubFor(get(urlMatching("/analytics(/.*)?")).willReturn(ok()));
 
         testClient.get().uri("/analytics")//

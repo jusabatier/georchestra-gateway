@@ -18,16 +18,15 @@
  */
 package org.georchestra.gateway.security.preauth;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import lombok.RequiredArgsConstructor;
 import org.georchestra.commons.security.SecurityHeaders;
 import org.georchestra.security.model.GeorchestraUser;
-import org.ldaptive.io.Base64;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.core.Authentication;
@@ -84,8 +83,7 @@ public class PreauthAuthenticationManager implements ReactiveAuthenticationManag
     public static boolean isPreAuthenticated(ServerWebExchange exchange) {
         HttpHeaders requestHeaders = exchange.getRequest().getHeaders();
         final String preAuthHeader = requestHeaders.getFirst(PREAUTH_HEADER_NAME);
-        final boolean preAuthenticated = "true".equalsIgnoreCase(preAuthHeader);
-        return preAuthenticated;
+        return Boolean.parseBoolean(preAuthHeader);
     }
 
     public static GeorchestraUser map(Map<String, String> requestHeaders) {
@@ -102,7 +100,7 @@ public class PreauthAuthenticationManager implements ReactiveAuthenticationManag
                 .map(roles -> Stream
                         .concat(Stream.of("ROLE_USER"), Stream.of(roles.split(";")).filter(StringUtils::hasText))
                         .distinct())
-                .orElse(Stream.of("ROLE_USER")).collect(Collectors.toList());
+                .orElse(Stream.of("ROLE_USER")).toList();
 
         GeorchestraUser user = new GeorchestraUser();
         user.setUsername(username);
@@ -110,7 +108,7 @@ public class PreauthAuthenticationManager implements ReactiveAuthenticationManag
         user.setFirstName(firstName);
         user.setLastName(lastName);
         user.setOrganization(org);
-        user.setRoles(roleNames);
+        user.setRoles(new ArrayList<>(roleNames));// mutable
         user.setOAuth2Provider(provider);
         user.setOAuth2Uid(providerId);
         // TODO rename oauth2 fields to a more generic name : externalProvider ?

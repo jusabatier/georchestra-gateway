@@ -21,7 +21,6 @@ package org.georchestra.gateway.security;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.validation.Valid;
@@ -192,12 +191,12 @@ public class GeorchestraGatewaySecurityConfigProperties implements Validator {
     @Override
     public void validate(Object target, Errors errors) {
         GeorchestraGatewaySecurityConfigProperties config = (GeorchestraGatewaySecurityConfigProperties) target;
-        Map<String, Server> ldap = config.getLdap();
-        if (ldap == null || ldap.isEmpty()) {
+        Map<String, Server> ldapConfig = config.getLdap();
+        if (ldapConfig == null || ldapConfig.isEmpty()) {
             return;
         }
         LdapConfigPropertiesValidations validations = new LdapConfigPropertiesValidations();
-        ldap.forEach((name, serverConfig) -> validations.validate(name, serverConfig, errors));
+        ldapConfig.forEach((name, serverConfig) -> validations.validate(name, serverConfig, errors));
     }
 
     public List<LdapServerConfig> simpleEnabled() {
@@ -205,8 +204,7 @@ public class GeorchestraGatewaySecurityConfigProperties implements Validator {
         return entries()//
                 .filter(e -> e.getValue().isEnabled())//
                 .filter(e -> !e.getValue().isExtended())//
-                .map(e -> builder.asBasicLdapConfig(e.getKey(), e.getValue()))//
-                .collect(Collectors.toList());
+                .map(e -> builder.asBasicLdapConfig(e.getKey(), e.getValue())).toList();
     }
 
     public List<ExtendedLdapConfig> extendedEnabled() {
@@ -216,7 +214,7 @@ public class GeorchestraGatewaySecurityConfigProperties implements Validator {
                 .filter(e -> !e.getValue().isActiveDirectory())//
                 .filter(e -> e.getValue().isExtended())//
                 .map(e -> builder.asExtendedLdapConfig(e.getKey(), e.getValue()))//
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private Stream<Entry<String, Server>> entries() {

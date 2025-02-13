@@ -19,10 +19,9 @@
 package org.georchestra.gateway.security.ldap.basic;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
-import org.georchestra.gateway.security.ServerHttpSecurityCustomizer;
 import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties;
+import org.georchestra.gateway.security.ServerHttpSecurityCustomizer;
 import org.georchestra.gateway.security.ldap.extended.ExtendedLdapAuthenticationConfiguration;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -71,7 +70,7 @@ import lombok.extern.slf4j.Slf4j;
 public class BasicLdapAuthenticationConfiguration {
 
     @Bean
-    public BasicLdapAuthenticatedUserMapper ldapAuthenticatedUserMapper(List<LdapServerConfig> enabledConfigs) {
+    BasicLdapAuthenticatedUserMapper ldapAuthenticatedUserMapper(List<LdapServerConfig> enabledConfigs) {
         return enabledConfigs.isEmpty() ? null : new BasicLdapAuthenticatedUserMapper();
     }
 
@@ -82,7 +81,7 @@ public class BasicLdapAuthenticationConfiguration {
 
     @Bean
     List<BasicLdapAuthenticationProvider> ldapAuthenticationProviders(List<LdapServerConfig> configs) {
-        return configs.stream().map(this::createLdapProvider).collect(Collectors.toList());
+        return configs.stream().map(this::createLdapProvider).toList();
     }
 
     private BasicLdapAuthenticationProvider createLdapProvider(LdapServerConfig config) {

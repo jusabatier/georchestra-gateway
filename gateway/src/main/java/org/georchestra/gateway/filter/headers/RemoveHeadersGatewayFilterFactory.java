@@ -90,7 +90,7 @@ public class RemoveHeadersGatewayFilterFactory extends AbstractGatewayFilterFact
 
         private @Getter String regEx;
 
-        private transient Pattern compiled;
+        private Pattern compiled;
 
         public RegExConfig(String regEx) {
             setRegEx(regEx);

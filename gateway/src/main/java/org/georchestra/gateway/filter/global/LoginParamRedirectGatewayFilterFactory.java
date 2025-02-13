@@ -48,12 +48,18 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 /**
- * {@link GatewayFilterFactory} that redirects to {@literal /login} if the
- * request's query string contains a {@literal login} parameter and the request
- * is not already authenticated.
+ * {@link GatewayFilterFactory} that redirects unauthenticated requests to
+ * {@literal /login} when the query string contains a {@literal login}
+ * parameter.
  * <p>
- * Sample usage:
- * 
+ * This filter applies only to idempotent HTTP methods (GET, HEAD, OPTIONS,
+ * TRACE) and ensures that authenticated users proceed without redirection.
+ * </p>
+ * <p>
+ * <b>Usage:</b> Add the following to {@code application.yaml} to enable this
+ * filter for specific routes:
+ * </p>
+ *
  * <pre>
  * <code>
  * spring:
@@ -66,12 +72,11 @@ import reactor.core.publisher.Mono;
  *        - LoginParamRedirect
  * </code>
  * </pre>
- * 
  */
 @Slf4j
 public class LoginParamRedirectGatewayFilterFactory extends AbstractGatewayFilterFactory<Object> {
 
-    private static final Set<HttpMethod> redirectMethods = Set.of(GET, HEAD, OPTIONS, TRACE);
+    private static final Set<HttpMethod> REDIRECT_METHODS = Set.of(GET, HEAD, OPTIONS, TRACE);
 
     @Override
     public LoginParamRedirectGatewayFilter apply(Object config) {
@@ -82,6 +87,10 @@ public class LoginParamRedirectGatewayFilterFactory extends AbstractGatewayFilte
         return new LoginParamRedirectGatewayFilter(delegate);
     }
 
+    /**
+     * Gateway filter that applies redirection logic when an unauthenticated request
+     * contains a {@code login} query parameter.
+     */
     @RequiredArgsConstructor
     public static class LoginParamRedirectGatewayFilter implements GatewayFilter {
 
@@ -90,10 +99,24 @@ public class LoginParamRedirectGatewayFilterFactory extends AbstractGatewayFilte
 
         private final @NonNull GatewayFilter delegate;
 
+        /**
+         * Intercepts requests and redirects to {@code /login} if:
+         * <ul>
+         * <li>The HTTP method is idempotent (GET, HEAD, OPTIONS, TRACE)</li>
+         * <li>The request contains a {@code login} query parameter</li>
+         * <li>The user is not authenticated</li>
+         * </ul>
+         * If the user is already authenticated, the request proceeds without
+         * redirection.
+         *
+         * @param exchange the current server exchange
+         * @param chain    the gateway filter chain
+         * @return a {@link Mono} that completes when the filter chain is executed
+         */
         @Override
         public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
             HttpMethod method = exchange.getRequest().getMethod();
-            if (redirectMethods.contains(method) && containsLoginQueryParam(exchange)) {
+            if (REDIRECT_METHODS.contains(method) && containsLoginQueryParam(exchange)) {
                 log.info("Applying ?login query param redirect filter for {} {}", method,
                         exchange.getRequest().getURI());
                 return redirectToLoginIfNotAuthenticated(exchange, chain);
@@ -101,33 +124,50 @@ public class LoginParamRedirectGatewayFilterFactory extends AbstractGatewayFilte
             return chain.filter(exchange);
         }
 
+        /**
+         * Redirects the user to {@code /login} if they are not authenticated.
+         *
+         * @param exchange the server exchange
+         * @param chain    the gateway filter chain
+         * @return a {@link Mono} that either redirects to {@code /login} or proceeds
+         *         with the request if already authenticated
+         */
         private Mono<Void> redirectToLoginIfNotAuthenticated(ServerWebExchange exchange, GatewayFilterChain chain) {
-
             return getAuthentication()//
                     .filter(Authentication::isAuthenticated)//
                     .switchIfEmpty(Mono.just(UNAUTHENTICATED))//
                     .flatMap(authentication -> {
-                        // delegate to the redirect filter otherwise
                         if (authentication instanceof AnonymousAuthenticationToken) {
-                            log.info("redirecting to /login: {}", exchange.getRequest().getURI());
+                            log.info("Redirecting to /login: {}", exchange.getRequest().getURI());
                             return delegate.filter(exchange, chain);
                         }
-                        // proceed if already authenticated
-                        log.info("already authenticated ({}), proceeding without redirection to /login",
+                        log.info("Already authenticated ({}), proceeding without redirection to /login",
                                 authentication.getName());
                         return chain.filter(exchange);
                     });
         }
 
+        /**
+         * Retrieves the current authentication context.
+         *
+         * @return a {@link Mono} containing the {@link Authentication} object, or an
+         *         empty Mono if unavailable
+         */
         @VisibleForTesting
         public Mono<Authentication> getAuthentication() {
             return ReactiveSecurityContextHolder.getContext().map(SecurityContext::getAuthentication);
         }
 
+        /**
+         * Checks if the request contains a {@code login} query parameter.
+         *
+         * @param exchange the server exchange
+         * @return {@code true} if the query parameter is present, {@code false}
+         *         otherwise
+         */
         private boolean containsLoginQueryParam(ServerWebExchange exchange) {
             ServerHttpRequest request = exchange.getRequest();
             return request.getQueryParams().containsKey("login");
         }
-
     }
 }

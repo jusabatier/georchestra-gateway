@@ -60,11 +60,11 @@ class RolesMappingsUserCustomizerTest {
     void constructorCreatesValidPatterns() {
         Pattern pattern;
 
-        pattern = RolesMappingsUserCustomizer.toPattern("ROLE.GDI.USER");
+        pattern = RolesMappingsUserCustomizer.compilePattern("ROLE.GDI.USER");
         assertTrue(pattern.matcher("ROLE.GDI.USER").matches());
         assertFalse(pattern.matcher("ROLE.GDI_USER").matches());
 
-        pattern = RolesMappingsUserCustomizer.toPattern("ROLE.*.*.ADMIN");
+        pattern = RolesMappingsUserCustomizer.compilePattern("ROLE.*.*.ADMIN");
         assertTrue(pattern.matcher("ROLE.GDI.GS.ADMIN").matches());
         assertFalse(pattern.matcher("ROLE.GDI.GS.USER").matches());
     }

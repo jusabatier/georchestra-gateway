@@ -23,12 +23,26 @@ import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFac
 import org.springframework.cloud.gateway.filter.factory.GatewayFilterFactory;
 
 /**
- * Georchestra-specific {@link GatewayFilterFactory} to remove all incoming
- * {@code sec-*} and {@code Authorization} (basic auth) request headers, hence
- * preventing impersonating geOrchestra authenticated users from incoming
- * requests.
+ * A geOrchestra-specific {@link GatewayFilterFactory} that removes all incoming
+ * security-related request headers, preventing unauthorized impersonation of
+ * authenticated users.
  * <p>
- * Sample usage:
+ * This filter is designed to strip:
+ * </p>
+ * <ul>
+ * <li>All headers prefixed with {@code sec-*}, which geOrchestra uses for
+ * user-related security information.</li>
+ * <li>The {@code Authorization} header when it contains Basic authentication
+ * credentials.</li>
+ * </ul>
+ * <p>
+ * By removing these headers from incoming requests, the gateway ensures that
+ * authentication and authorization are enforced properly and prevents external
+ * clients from injecting unauthorized credentials.
+ * </p>
+ * <p>
+ * Usage example:
+ * </p>
  * 
  * <pre>
  * <code>
@@ -53,11 +67,23 @@ public class RemoveSecurityHeadersGatewayFilterFactory extends AbstractGatewayFi
     private final RemoveHeadersGatewayFilterFactory.RegExConfig config = new RemoveHeadersGatewayFilterFactory.RegExConfig(
             DEFAULT_SEC_HEADERS_PATTERN);
 
+    /**
+     * Creates a new instance of {@code RemoveSecurityHeadersGatewayFilterFactory}
+     * that removes security-sensitive headers from incoming requests.
+     */
     public RemoveSecurityHeadersGatewayFilterFactory() {
         super(Object.class);
         delegate = new RemoveHeadersGatewayFilterFactory();
     }
 
+    /**
+     * Applies the filter by delegating to {@link RemoveHeadersGatewayFilterFactory}
+     * with a pre-configured regular expression that matches security-related
+     * headers.
+     * 
+     * @param unused the configuration object (not used)
+     * @return a {@link GatewayFilter} instance that removes security headers
+     */
     @Override
     public GatewayFilter apply(Object unused) {
         return delegate.apply(config);

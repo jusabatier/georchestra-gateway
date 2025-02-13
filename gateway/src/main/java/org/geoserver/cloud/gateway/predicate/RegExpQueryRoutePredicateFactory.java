@@ -69,23 +69,51 @@ public class RegExpQueryRoutePredicateFactory
     /** HTTP request query parameter value regexp key. */
     public static final String VALUE_KEY = "valueRegexp";
 
+    /**
+     * Constructs a new instance of {@link RegExpQueryRoutePredicateFactory}.
+     */
     public RegExpQueryRoutePredicateFactory() {
         super(Config.class);
     }
 
-    public @Override List<String> shortcutFieldOrder() {
+    /**
+     * Returns the order of the shortcut fields.
+     *
+     * @return the field order list.
+     */
+    @Override
+    public List<String> shortcutFieldOrder() {
         return Arrays.asList(PARAM_KEY, VALUE_KEY);
     }
 
-    public @Override Predicate<ServerWebExchange> apply(Config config) {
+    /**
+     * Applies the given configuration to create a {@link GatewayPredicate}.
+     *
+     * @param config the configuration to apply.
+     * @return a {@link GatewayPredicate} based on the provided config.
+     */
+    @Override
+    public Predicate<ServerWebExchange> apply(Config config) {
         return new RegExpQueryRoutePredicate(config);
     }
 
+    /**
+     * A {@link GatewayPredicate} implementation for matching query parameters based
+     * on regular expressions.
+     */
     @RequiredArgsConstructor
     private static class RegExpQueryRoutePredicate implements GatewayPredicate {
         private final @NonNull Config config;
 
-        public @Override boolean test(ServerWebExchange exchange) {
+        /**
+         * Tests if the given exchange matches the predicate based on the configured
+         * regular expressions.
+         *
+         * @param exchange the exchange to test.
+         * @return true if the predicate matches the exchange, false otherwise.
+         */
+        @Override
+        public boolean test(ServerWebExchange exchange) {
             final String paramRegexp = config.getParamRegexp();
             final String valueRegexp = config.getValueRegexp();
 
@@ -98,31 +126,59 @@ public class RegExpQueryRoutePredicateFactory
             return paramNameMatches && paramValueMatches(paramName.get(), valueRegexp, exchange);
         }
 
-        public @Override String toString() {
+        /**
+         * Provides a string representation of this predicate.
+         *
+         * @return a string describing this predicate.
+         */
+        @Override
+        public String toString() {
             return String.format("Query: param regexp='%s' value regexp='%s'", config.getParamRegexp(),
                     config.getValueRegexp());
         }
     }
 
+    /**
+     * Finds the first query parameter that matches the provided regular expression.
+     *
+     * @param regex    the regular expression to match the parameter name.
+     * @param exchange the exchange containing the request.
+     * @return an optional containing the parameter name if a match is found, or
+     *         empty otherwise.
+     */
     static Optional<String> findParameterName(@NonNull String regex, ServerWebExchange exchange) {
         Set<String> parameterNames = exchange.getRequest().getQueryParams().keySet();
         return parameterNames.stream().filter(name -> name.matches(regex)).findFirst();
     }
 
+    /**
+     * Checks if the value of the query parameter matches the provided regular
+     * expression.
+     *
+     * @param paramName  the name of the parameter.
+     * @param valueRegEx the regular expression to match the parameter value.
+     * @param exchange   the exchange containing the request.
+     * @return true if a matching value is found, false otherwise.
+     */
     static boolean paramValueMatches(@NonNull String paramName, @NonNull String valueRegEx,
             ServerWebExchange exchange) {
         List<String> values = exchange.getRequest().getQueryParams().get(paramName);
         return values != null && values.stream().anyMatch(v -> v != null && v.matches(valueRegEx));
     }
 
+    /**
+     * Configuration class for the {@link RegExpQueryRoutePredicateFactory}.
+     */
     @Data
     @Accessors(chain = true)
     @Validated
     public static class Config {
 
+        /** The regular expression for the query parameter name. */
         @NotEmpty
         private String paramRegexp;
 
+        /** The regular expression for the query parameter value (optional). */
         private String valueRegexp;
     }
 }

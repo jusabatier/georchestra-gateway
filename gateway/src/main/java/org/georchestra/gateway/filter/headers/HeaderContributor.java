@@ -25,44 +25,61 @@ import java.util.stream.Collectors;
 
 import org.georchestra.gateway.filter.headers.providers.GeorchestraOrganizationHeadersContributor;
 import org.georchestra.gateway.filter.headers.providers.GeorchestraUserHeadersContributor;
+import org.georchestra.gateway.filter.headers.providers.JsonPayloadHeadersContributor;
 import org.georchestra.gateway.filter.headers.providers.SecProxyHeaderContributor;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
-import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.web.server.ServerWebExchange;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Extension point to aid {@link AddSecHeadersGatewayFilterFactory} in appending
- * the required HTTP request headers to proxied requests.
+ * Strategy interface for contributing HTTP request headers to proxied requests.
  * <p>
- * Beans of this type are strategy objects that contribute zero or more HTTP
- * request headers to be appended to proxied requests to back-end services.
- * 
- * @see SecProxyHeaderContributor
- * @see GeorchestraUserHeadersContributor
- * @see GeorchestraOrganizationHeadersContributor
+ * Implementations of this class define specific security headers that should be
+ * appended to proxied requests based on authentication and request context.
+ * </p>
+ * <p>
+ * These implementations are used by {@link AddSecHeadersGatewayFilterFactory}
+ * to determine which headers should be added.
+ * </p>
+ *
+ * <h3>Implementations</h3>
+ * <ul>
+ * <li>{@link SecProxyHeaderContributor}: Appends the {@code sec-proxy}
+ * header</li>
+ * <li>{@link GeorchestraUserHeadersContributor}: Adds user-related security
+ * headers</li>
+ * <li>{@link GeorchestraOrganizationHeadersContributor}: Appends organization
+ * information headers</li>
+ * <li>{@link JsonPayloadHeadersContributor}: Encodes security attributes as a
+ * JSON payload</li>
+ * </ul>
+ *
+ * @see AddSecHeadersGatewayFilterFactory
  */
 @Slf4j(topic = "org.georchestra.gateway.filter.headers")
 public abstract class HeaderContributor implements Ordered {
 
     /**
-     * Prepare a header contributor for the given HTTP request-response interaction.
+     * Prepares a consumer that modifies {@link HttpHeaders} for a proxied request.
      * <p>
-     * The returned consumer will {@link HttpHeaders#set(String, String) set} or
-     * {@link HttpHeaders#add(String, String) add} whatever request headers are
-     * appropriate for the backend service.
+     * Implementations should return a consumer that either sets or appends headers
+     * based on the security context and request attributes.
+     * </p>
+     *
+     * @param exchange the current {@link ServerWebExchange}
+     * @return a {@link Consumer} that modifies the request headers
      */
     public abstract Consumer<HttpHeaders> prepare(ServerWebExchange exchange);
 
     /**
      * {@inheritDoc}
-     * 
-     * @return {@code 0} as default order, implementations should override as needed
-     *         in case they need to apply their customizations to
-     *         {@link ServerHttpSecurity} in a specific order.
+     *
+     * @return {@code 0} as the default order. Implementations may override this
+     *         method to control execution order when multiple contributors are
+     *         applied.
      * @see Ordered#HIGHEST_PRECEDENCE
      * @see Ordered#LOWEST_PRECEDENCE
      */
@@ -70,21 +87,46 @@ public abstract class HeaderContributor implements Ordered {
         return 0;
     }
 
+    /**
+     * Appends a header to the request if it is enabled and has a valid value.
+     *
+     * @param target  the target {@link HttpHeaders}
+     * @param header  the header name
+     * @param enabled whether the header should be included
+     * @param value   the header value
+     */
     protected void add(@NonNull HttpHeaders target, @NonNull String header, @NonNull Optional<Boolean> enabled,
             @NonNull Optional<String> value) {
         add(target, header, enabled, value.orElse(null));
     }
 
+    /**
+     * Appends a header to the request if it is enabled and has a valid list of
+     * values.
+     *
+     * @param target  the target {@link HttpHeaders}
+     * @param header  the header name
+     * @param enabled whether the header should be included
+     * @param values  the list of header values
+     */
     protected void add(@NonNull HttpHeaders target, @NonNull String header, @NonNull Optional<Boolean> enabled,
             @NonNull List<String> values) {
         String val = values.isEmpty() ? null : values.stream().collect(Collectors.joining(";"));
         add(target, header, enabled, val);
     }
 
+    /**
+     * Appends a header to the request if it is enabled and has a valid value.
+     *
+     * @param target  the target {@link HttpHeaders}
+     * @param header  the header name
+     * @param enabled whether the header should be included
+     * @param value   the header value
+     */
     protected void add(@NonNull HttpHeaders target, @NonNull String header, @NonNull Optional<Boolean> enabled,
             String value) {
-        if (enabled.orElse(Boolean.FALSE).booleanValue()) {
-            if (null == value) {
+        if (enabled.orElse(Boolean.FALSE)) {
+            if (value == null) {
                 log.trace("Value for header {} is not present", header);
             } else {
                 log.debug("Appending header {}: {}", header, value);
@@ -95,8 +137,15 @@ public abstract class HeaderContributor implements Ordered {
         }
     }
 
+    /**
+     * Appends a header to the request if it has a valid value.
+     *
+     * @param target the target {@link HttpHeaders}
+     * @param header the header name
+     * @param value  the header value
+     */
     protected void add(@NonNull HttpHeaders target, @NonNull String header, String value) {
-        if (null == value) {
+        if (value == null) {
             log.trace("Value for header {} is not present", header);
         } else {
             log.debug("Appending header {}: {}", header, value);

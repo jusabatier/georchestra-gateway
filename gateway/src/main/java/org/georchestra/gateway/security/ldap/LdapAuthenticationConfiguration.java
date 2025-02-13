@@ -37,39 +37,42 @@ import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.authentication.ReactiveAuthenticationManagerAdapter;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.ldap.userdetails.LdapUserDetails;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
 
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link ServerHttpSecurityCustomizer} to enable LDAP based authentication and
+ * {@link ServerHttpSecurityCustomizer} to enable LDAP-based authentication and
  * authorization across multiple LDAP databases.
  * <p>
- * This configuration sets up the required beans for spring-based LDAP
+ * This configuration sets up the required beans for Spring-based LDAP
  * authentication and authorization, using
  * {@link GeorchestraGatewaySecurityConfigProperties} to get the
  * {@link GeorchestraGatewaySecurityConfigProperties#getUrl() connection URL}
  * and the {@link GeorchestraGatewaySecurityConfigProperties#getBaseDn() base
  * DN}.
+ * </p>
  * <p>
- * As a result, the {@link ServerHttpSecurity} will have HTTP-Basic
- * authentication enabled and {@link ServerHttpSecurity#formLogin() form login}
- * set up.
+ * As a result, the {@link ServerHttpSecurity} will have HTTP Basic
+ * authentication enabled, as well as {@link ServerHttpSecurity#formLogin() form
+ * login}.
+ * </p>
  * <p>
- * Upon successful authentication, the corresponding {@link Authentication} with
- * an {@link LdapUserDetails} as {@link Authentication#getPrincipal() principal}
- * and the roles extracted from LDAP as {@link Authentication#getAuthorities()
- * authorities}, will be set as the security context's
- * {@link SecurityContext#getAuthentication() authentication} property.
+ * Upon successful authentication, an {@link Authentication} instance will be
+ * set in the {@link org.springframework.security.core.context.SecurityContext
+ * SecurityContext} with an
+ * {@link org.springframework.security.ldap.userdetails.LdapUserDetails
+ * LdapUserDetails} as the principal and roles extracted from LDAP as
+ * authorities.
+ * </p>
  * <p>
- * Note however, this may not be enough information to convey
- * geOrchestra-specific HTTP request headers to backend services, depending on
- * the matching gateway-route configuration. See
- * {@link ExtendedLdapAuthenticationConfiguration} for further details.
- * 
+ * However, depending on the configured gateway routes, this may not be enough
+ * information to convey geOrchestra-specific HTTP request headers to backend
+ * services. See {@link ExtendedLdapAuthenticationConfiguration} for further
+ * details.
+ * </p>
+ *
  * @see GeorchestraGatewaySecurityConfigProperties
  * @see BasicLdapAuthenticationConfiguration
  * @see ExtendedLdapAuthenticationConfiguration
@@ -82,26 +85,63 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j(topic = "org.georchestra.gateway.security.ldap")
 public class LdapAuthenticationConfiguration {
 
+    /**
+     * Enables HTTP Basic authentication and form login for LDAP authentication.
+     */
     public static final class LDAPAuthenticationCustomizer implements ServerHttpSecurityCustomizer {
+        /**
+         * Configures HTTP Basic authentication and form login.
+         *
+         * @param http the {@link ServerHttpSecurity} instance
+         */
         public @Override void customize(ServerHttpSecurity http) {
             log.info("Enabling HTTP Basic authentication support for LDAP");
             http.httpBasic().and().formLogin();
         }
     }
 
+    /**
+     * Registers an LDAP authentication customizer to enable HTTP Basic and form
+     * login.
+     *
+     * @return a {@link ServerHttpSecurityCustomizer} for LDAP authentication
+     */
     @Bean
     ServerHttpSecurityCustomizer ldapHttpBasicLoginFormEnablerExtension() {
         return new LDAPAuthenticationCustomizer();
     }
 
+    /**
+     * Creates an {@link AuthenticationWebFilter} for LDAP authentication.
+     * <p>
+     * This filter is triggered when requests match the {@code /auth/login} path.
+     * </p>
+     *
+     * @param ldapAuthenticationManager the {@link ReactiveAuthenticationManager}
+     *                                  for LDAP authentication
+     * @return an {@link AuthenticationWebFilter} configured for LDAP authentication
+     */
     @Bean
     AuthenticationWebFilter ldapAuthenticationWebFilter(ReactiveAuthenticationManager ldapAuthenticationManager) {
-
         AuthenticationWebFilter ldapAuthFilter = new AuthenticationWebFilter(ldapAuthenticationManager);
         ldapAuthFilter.setRequiresAuthenticationMatcher(ServerWebExchangeMatchers.pathMatchers("/auth/login"));
         return ldapAuthFilter;
     }
 
+    /**
+     * Creates an LDAP authentication manager that combines multiple authentication
+     * providers.
+     * <p>
+     * This manager supports both basic and extended LDAP authentication providers.
+     * If no providers are available, {@code null} is returned.
+     * </p>
+     *
+     * @param basic    a list of {@link BasicLdapAuthenticationProvider} instances
+     * @param extended a list of {@link GeorchestraLdapAuthenticationProvider}
+     *                 instances
+     * @return a {@link ReactiveAuthenticationManager} if providers are available,
+     *         otherwise {@code null}
+     */
     @Bean
     ReactiveAuthenticationManager ldapAuthenticationManager(List<BasicLdapAuthenticationProvider> basic,
             List<GeorchestraLdapAuthenticationProvider> extended) {
@@ -109,8 +149,11 @@ public class LdapAuthenticationConfiguration {
         List<AuthenticationProvider> flattened = Stream.concat(basic.stream(), extended.stream())
                 .map(AuthenticationProvider.class::cast).toList();
 
-        if (flattened.isEmpty())
+        if (flattened.isEmpty()) {
+            log.warn("No LDAP authentication providers configured.");
             return null;
+        }
+
         ProviderManager providerManager = new ProviderManager(flattened);
         return new ReactiveAuthenticationManagerAdapter(providerManager);
     }

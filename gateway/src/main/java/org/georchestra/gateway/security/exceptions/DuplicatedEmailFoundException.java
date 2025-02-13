@@ -18,13 +18,31 @@
  */
 package org.georchestra.gateway.security.exceptions;
 
+/**
+ * Exception thrown when multiple user accounts are found with the same email
+ * address.
+ * <p>
+ * This exception is used to indicate a conflict in user identity resolution,
+ * typically occurring during authentication or user synchronization processes.
+ * </p>
+ */
 @SuppressWarnings("serial")
 public class DuplicatedEmailFoundException extends RuntimeException {
 
+    /**
+     * Constructs a new {@code DuplicatedEmailFoundException} with the specified
+     * detail message.
+     *
+     * @param message the detail message
+     */
     public DuplicatedEmailFoundException(String message) {
         super(message);
     }
 
+    /**
+     * Constructs a new {@code DuplicatedEmailFoundException} without a detail
+     * message.
+     */
     public DuplicatedEmailFoundException() {
     }
 }

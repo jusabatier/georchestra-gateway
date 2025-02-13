@@ -29,7 +29,26 @@ import org.georchestra.gateway.autoconfigure.security.ConditionalOnLdapEnabled;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 /**
+ * Meta-annotation that enables a bean only if the default geOrchestra LDAP
+ * integration is enabled.
+ * <p>
+ * This annotation is used to conditionally activate beans when both of the
+ * following conditions are met:
+ * <ul>
+ * <li>LDAP is enabled for geOrchestra (via
+ * {@link ConditionalOnLdapEnabled}).</li>
+ * <li>The property {@code georchestra.gateway.security.ldap.default.enabled} is
+ * set to {@code true}.</li>
+ * </ul>
+ * </p>
  *
+ * <p>
+ * If the property is missing or explicitly set to {@code false}, the annotated
+ * bean will not be created.
+ * </p>
+ *
+ * @see ConditionalOnLdapEnabled
+ * @see ConditionalOnProperty
  */
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)

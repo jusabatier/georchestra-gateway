@@ -38,9 +38,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
-import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.config.web.server.ServerHttpSecurity.OAuth2LoginSpec;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
 import org.springframework.security.oauth2.client.endpoint.ReactiveOAuth2AccessTokenResponseClient;
 import org.springframework.security.oauth2.client.endpoint.WebClientReactiveAuthorizationCodeTokenResponseClient;
@@ -64,6 +62,13 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.transport.ProxyProvider;
 
+/**
+ * OAuth2 security configuration for geOrchestra's Gateway.
+ * <p>
+ * This configuration enables OAuth2 authentication, OpenID Connect integration,
+ * and HTTP proxy support for OAuth2 clients. It includes support for OAuth2
+ * login, JWT decoding, role mapping, and customized logout handling.
+ */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties({ OAuth2ProxyConfigProperties.class, OpenIdConnectCustomClaimsConfigProperties.class,
         GeorchestraGatewaySecurityConfigProperties.class, ExtendedOAuth2ClientProperties.class })
@@ -72,14 +77,28 @@ public class OAuth2Configuration {
 
     private @Value("${georchestra.gateway.logoutUrl:/?logout}") String georchestraLogoutUrl;
 
+    /**
+     * Customizer for enabling OAuth2 authentication in the Spring Security filter
+     * chain.
+     */
     public static final class OAuth2AuthenticationCustomizer implements ServerHttpSecurityCustomizer {
-
-        public @Override void customize(ServerHttpSecurity http) {
+        @Override
+        public void customize(ServerHttpSecurity http) {
             log.info("Enabling authentication support using an OAuth 2.0 and/or OpenID Connect 1.0 Provider");
             http.oauth2Login();
         }
     }
 
+    /**
+     * Configures the OIDC logout handler to handle end-session requests properly.
+     *
+     * @param clientRegistrationRepository The repository of registered OAuth2
+     *                                     clients.
+     * @param properties                   The extended OAuth2 client properties
+     *                                     including logout endpoints.
+     * @return A configured {@link ServerLogoutSuccessHandler} that initiates OIDC
+     *         logout.
+     */
     @Bean
     @Profile("!test")
     ServerLogoutSuccessHandler oidcLogoutSuccessHandler(
@@ -100,23 +119,41 @@ public class OAuth2Configuration {
             }
         });
 
-        OidcClientInitiatedServerLogoutSuccessHandler oidcLogoutSuccessHandler = new OidcClientInitiatedServerLogoutSuccessHandler(
+        OidcClientInitiatedServerLogoutSuccessHandler logoutHandler = new OidcClientInitiatedServerLogoutSuccessHandler(
                 clientRegistrationRepository);
-        oidcLogoutSuccessHandler.setPostLogoutRedirectUri("{baseUrl}/login?logout");
-        oidcLogoutSuccessHandler.setLogoutSuccessUrl(URI.create(georchestraLogoutUrl));
-        return oidcLogoutSuccessHandler;
+        logoutHandler.setPostLogoutRedirectUri("{baseUrl}/login?logout");
+        logoutHandler.setLogoutSuccessUrl(URI.create(georchestraLogoutUrl));
+        return logoutHandler;
     }
 
+    /**
+     * Registers a Spring Security customizer to enable OAuth2 login.
+     *
+     * @return A {@link ServerHttpSecurityCustomizer} instance.
+     */
     @Bean
     ServerHttpSecurityCustomizer oauth2LoginEnablingCustomizer() {
         return new OAuth2AuthenticationCustomizer();
     }
 
+    /**
+     * Provides a default OAuth2 user mapper for mapping authentication tokens to
+     * geOrchestra users.
+     *
+     * @return An instance of {@link OAuth2UserMapper}.
+     */
     @Bean
     OAuth2UserMapper oAuth2GeorchestraUserUserMapper() {
         return new OAuth2UserMapper();
     }
 
+    /**
+     * Provides a custom OpenID Connect user mapper for processing non-standard
+     * claims.
+     *
+     * @param nonStandardClaimsConfig Configuration for custom OIDC claims.
+     * @return An instance of {@link OpenIdConnectUserMapper}.
+     */
     @Bean
     OpenIdConnectUserMapper openIdConnectGeorchestraUserUserMapper(
             OpenIdConnectCustomClaimsConfigProperties nonStandardClaimsConfig) {
@@ -124,31 +161,28 @@ public class OAuth2Configuration {
     }
 
     /**
-     * Configures the OAuth2 client to use the HTTP proxy if enabled, by means of
-     * {@linkplain #oauth2WebClient}
-     * <p>
-     * {@link OAuth2LoginSpec ServerHttpSecurity$OAuth2LoginSpec#createDefault()}
-     * will return a {@link ReactiveAuthenticationManager} by first looking up a
-     * {@link ReactiveOAuth2AccessTokenResponseClient
-     * ReactiveOAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest>}
-     * in the application context, and creating a default one if none is found.
-     * <p>
-     * We provide such bean here to have it configured with an {@link WebClient HTTP
-     * client} that will use the {@link OAuth2ProxyConfigProperties configured} HTTP
-     * proxy.
+     * Configures the OAuth2 access token response client to support an HTTP proxy
+     * if enabled.
+     *
+     * @param oauth2WebClient The WebClient configured for OAuth2 communication.
+     * @return A configured instance of
+     *         {@link ReactiveOAuth2AccessTokenResponseClient}.
      */
     @Bean
     ReactiveOAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> reactiveOAuth2AccessTokenResponseClient(
             @Qualifier("oauth2WebClient") WebClient oauth2WebClient) {
-
         WebClientReactiveAuthorizationCodeTokenResponseClient client = new WebClientReactiveAuthorizationCodeTokenResponseClient();
         client.setWebClient(oauth2WebClient);
         return client;
     }
 
     /**
-     * Custom JWT decoder factory to use the web client that can be set up to go
-     * through an HTTP proxy
+     * Creates a JWT decoder factory that supports OAuth2 authentication and an
+     * optional HTTP proxy.
+     *
+     * @param oauth2WebClient The WebClient used to fetch JWT keys if needed.
+     * @return A {@link ReactiveJwtDecoderFactory} configured for OAuth2
+     *         authentication.
      */
     @Bean
     ReactiveJwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
@@ -174,18 +208,31 @@ public class OAuth2Configuration {
                 return jwtDecoder.decode(token).map(jwt -> new Jwt(jwt.getTokenValue(), jwt.getIssuedAt(),
                         jwt.getExpiresAt(), jwt.getHeaders(), removeNullClaims(jwt.getClaims())));
             } catch (ParseException exception) {
-                throw new BadJwtException(
-                        "An error occurred while attempting to decode the Jwt: " + exception.getMessage(), exception);
+                throw new BadJwtException("Failed to decode the JWT token", exception);
             }
         };
     }
 
-    // Some IDPs return claims with null value but Spring does not handle them
+    /**
+     * Removes null claims from JWT tokens to avoid Spring OAuth2 processing issues.
+     */
     private Map<String, Object> removeNullClaims(Map<String, Object> claims) {
         return claims.entrySet().stream().filter(entry -> entry.getValue() != null)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
+    /**
+     * Provides a default implementation of {@link DefaultReactiveOAuth2UserService}
+     * for handling OAuth2 user authentication.
+     * <p>
+     * This service is responsible for retrieving user details from the OAuth2
+     * provider and processing user information. The configured {@link WebClient} is
+     * used to make requests to the provider's user info endpoint, allowing it to
+     * support an HTTP proxy if configured.
+     *
+     * @param oauth2WebClient The WebClient instance configured for OAuth2 requests.
+     * @return A configured instance of {@link DefaultReactiveOAuth2UserService}.
+     */
     @Bean
     DefaultReactiveOAuth2UserService reactiveOAuth2UserService(
             @Qualifier("oauth2WebClient") WebClient oauth2WebClient) {
@@ -195,6 +242,18 @@ public class OAuth2Configuration {
         return service;
     }
 
+    /**
+     * Provides a customized {@link OidcReactiveOAuth2UserService} for handling
+     * OpenID Connect (OIDC) authentication.
+     * <p>
+     * This service extends the default OAuth2 user service to support OIDC-specific
+     * claims and processing. It delegates OAuth2 authentication to the provided
+     * {@link DefaultReactiveOAuth2UserService}.
+     *
+     * @param oauth2Delegate The default OAuth2 user service used for retrieving
+     *                       user information.
+     * @return A configured instance of {@link OidcReactiveOAuth2UserService}.
+     */
     @Bean
     OidcReactiveOAuth2UserService oidcReactiveOAuth2UserService(DefaultReactiveOAuth2UserService oauth2Delegate) {
         OidcReactiveOAuth2UserService oidUserService = new OidcReactiveOAuth2UserService();
@@ -203,39 +262,24 @@ public class OAuth2Configuration {
     }
 
     /**
-     * {@link WebClient} to use when performing HTTP POST requests to the OAuth2
-     * service providers, that can be configured to use an HTTP proxy through the
-     * {@link OAuth2ProxyConfigProperties} configuration properties.
+     * Configures a WebClient for OAuth2 authentication requests, supporting HTTP
+     * proxy settings if enabled.
      *
-     * @param proxyConfig defines the HTTP proxy settings specific for the OAuth2
-     *                    client. If not
-     *                    {@link OAuth2ProxyConfigProperties#isEnabled() enabled},
-     *                    the {@code WebClient} will use the proxy configured
-     *                    through System properties ({@literal http(s).proxyHost}
-     *                    and {@literal http(s).proxyPort}), if any.
+     * @param proxyConfig The proxy configuration properties.
+     * @return A configured {@link WebClient} instance.
      */
     @Bean("oauth2WebClient")
     WebClient oauth2WebClient(OAuth2ProxyConfigProperties proxyConfig) {
-        final String proxyHost = proxyConfig.getHost();
-        final Integer proxyPort = proxyConfig.getPort();
-        final String proxyUser = proxyConfig.getUsername();
-        final String proxyPassword = proxyConfig.getPassword();
-
         HttpClient httpClient = HttpClient.create();
         if (proxyConfig.isEnabled()) {
-            if (proxyHost == null || proxyPort == null) {
-                throw new IllegalStateException("OAuth2 client HTTP proxy is enabled, but host and port not provided");
-            }
-            log.info("Oauth2 client will use HTTP proxy {}:{}", proxyHost, proxyPort);
-            httpClient = httpClient.proxy(proxy -> proxy.type(ProxyProvider.Proxy.HTTP).host(proxyHost).port(proxyPort)
-                    .username(proxyUser).password(user -> proxyPassword));
+            log.info("OAuth2 client will use HTTP proxy {}:{}", proxyConfig.getHost(), proxyConfig.getPort());
+            httpClient = httpClient.proxy(proxy -> proxy.type(ProxyProvider.Proxy.HTTP).host(proxyConfig.getHost())
+                    .port(proxyConfig.getPort()).username(proxyConfig.getUsername())
+                    .password(user -> proxyConfig.getPassword()));
         } else {
-            log.info("Oauth2 client will use HTTP proxy from System properties if provided");
+            log.info("OAuth2 client will use system-defined HTTP proxy settings if available.");
             httpClient = httpClient.proxyWithSystemProperties();
         }
-        ReactorClientHttpConnector conn = new ReactorClientHttpConnector(httpClient);
-
-        return WebClient.builder().clientConnector(conn).build();
+        return WebClient.builder().clientConnector(new ReactorClientHttpConnector(httpClient)).build();
     }
-
 }

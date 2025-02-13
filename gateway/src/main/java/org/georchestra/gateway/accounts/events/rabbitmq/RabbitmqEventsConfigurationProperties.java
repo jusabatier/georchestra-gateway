@@ -25,8 +25,37 @@ import lombok.Data;
 import lombok.Generated;
 
 /**
- * Configuration properties to enable rabbit-mq event dispatching of accounts
- * created
+ * Configuration properties for RabbitMQ event dispatching related to account
+ * creation.
+ * <p>
+ * These properties define how geOrchestra should publish events to RabbitMQ
+ * when a new LDAP account is created following a user's first successful login
+ * via OAuth2 authentication.
+ * </p>
+ * <p>
+ * The properties are prefixed with
+ * {@code georchestra.gateway.security.events.rabbitmq} and can be configured in
+ * the application's configuration file (e.g., {@code application.yml}).
+ * </p>
+ *
+ * <p>
+ * <b>Example Configuration:</b>
+ * </p>
+ * 
+ * <pre>
+ * georchestra:
+ *   gateway:
+ *     security:
+ *       events:
+ *         rabbitmq:
+ *           enabled: true
+ *           host: rabbitmq.example.com
+ *           port: 5672
+ *           user: myRabbitUser
+ *           password: mySecretPassword
+ * </pre>
+ *
+ * @see org.springframework.boot.context.properties.ConfigurationProperties
  */
 @Data
 @Generated
@@ -34,28 +63,41 @@ import lombok.Generated;
 @ConfigurationProperties(prefix = RabbitmqEventsConfigurationProperties.PREFIX)
 public class RabbitmqEventsConfigurationProperties {
 
+    /** The prefix for all RabbitMQ-related configuration properties. */
     public static final String PREFIX = "georchestra.gateway.security.events.rabbitmq";
+
+    /** The configuration key to enable or disable RabbitMQ event dispatching. */
     public static final String ENABLED = PREFIX + ".enabled";
 
     /**
-     * Whether rabbit-mq events should be sent when an LDAP account was created upon
-     * a first successful login through OAuth2
+     * Whether RabbitMQ events should be sent when an LDAP account is created
+     * following a user's first successful login via OAuth2 authentication.
+     * <p>
+     * Default: {@code false}.
+     * </p>
      */
     private boolean enabled;
+
     /**
-     * The rabbit-mq host name
+     * The hostname of the RabbitMQ server.
      */
     private String host;
+
     /**
-     * The rabbit-mq host port number
+     * The port number of the RabbitMQ server.
+     * <p>
+     * Default: {@code 5672} (the default AMQP port).
+     * </p>
      */
     private int port;
+
     /**
-     * The rabbit-mq authentication user
+     * The username used for authentication with the RabbitMQ server.
      */
     private String user;
+
     /**
-     * The rabbit-mq authentication password
+     * The password used for authentication with the RabbitMQ server.
      */
     private String password;
 }

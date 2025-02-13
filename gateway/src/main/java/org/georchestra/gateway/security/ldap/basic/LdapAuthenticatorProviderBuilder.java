@@ -35,6 +35,32 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 
 /**
+ * Builder for creating an {@link ExtendedLdapAuthenticationProvider} instance
+ * with a configurable LDAP authentication setup.
+ * <p>
+ * This builder allows setting:
+ * <ul>
+ * <li>LDAP connection properties (URL, base DN, admin credentials)</li>
+ * <li>User search configuration (search base, filter, returning
+ * attributes)</li>
+ * <li>Role resolution configuration (group search base and filter)</li>
+ * <li>Integration with an optional {@link AccountDao} for user account
+ * management</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Example usage:
+ * </p>
+ * 
+ * <pre>
+ * {
+ *     &#64;code
+ *     LdapAuthenticationProvider provider = new LdapAuthenticatorProviderBuilder().url("ldap://example.com")
+ *             .baseDn("dc=example,dc=com").userSearchBase("ou=users").userSearchFilter("(uid={0})")
+ *             .rolesSearchBase("ou=groups").rolesSearchFilter("(member={0})").build();
+ * }
+ * </pre>
  */
 @Accessors(chain = true, fluent = true)
 public class LdapAuthenticatorProviderBuilder {
@@ -53,34 +79,49 @@ public class LdapAuthenticatorProviderBuilder {
 
     private @Setter AccountDao accountDao;
 
-    // null = all atts, empty == none
+    /**
+     * Attributes to be retrieved when querying LDAP for user details.
+     * <p>
+     * A {@code null} value retrieves all attributes, while an empty array retrieves
+     * none.
+     * </p>
+     */
     private @Setter String[] returningAttributes = null;
 
+    /**
+     * Builds and returns an {@link ExtendedLdapAuthenticationProvider} based on the
+     * configured settings.
+     *
+     * @return an LDAP authentication provider
+     * @throws NullPointerException if required fields are not set
+     */
     public ExtendedLdapAuthenticationProvider build() {
-        requireNonNull(url, "url is not set");
-        requireNonNull(baseDn, "baseDn is not set");
-        requireNonNull(userSearchBase, "userSearchBase is not set");
-        requireNonNull(userSearchFilter, "userSearchFilter is not set");
-        requireNonNull(rolesSearchBase, "rolesSearchBase is not set");
-        requireNonNull(rolesSearchFilter, "rolesSearchFilter is not set");
+        requireNonNull(url, "LDAP URL is not set");
+        requireNonNull(baseDn, "Base DN is not set");
+        requireNonNull(userSearchBase, "User search base is not set");
+        requireNonNull(userSearchFilter, "User search filter is not set");
+        requireNonNull(rolesSearchBase, "Roles search base is not set");
+        requireNonNull(rolesSearchFilter, "Roles search filter is not set");
 
-        final ExtendedPasswordPolicyAwareContextSource source = contextSource();
-        final BindAuthenticator authenticator = ldapAuthenticator(source);
-        final DefaultLdapAuthoritiesPopulator rolesPopulator = ldapAuthoritiesPopulator(source);
+        final ExtendedPasswordPolicyAwareContextSource contextSource = createContextSource();
+        final BindAuthenticator authenticator = createLdapAuthenticator(contextSource);
+        final DefaultLdapAuthoritiesPopulator rolesPopulator = createLdapAuthoritiesPopulator(contextSource);
+
         ExtendedLdapAuthenticationProvider provider = new ExtendedLdapAuthenticationProvider(authenticator,
                 rolesPopulator);
-
-        final GrantedAuthoritiesMapper rolesMapper = ldapAuthoritiesMapper();
-        provider.setAuthoritiesMapper(rolesMapper);
+        provider.setAuthoritiesMapper(createAuthoritiesMapper());
         provider.setUserDetailsContextMapper(new NoPasswordLdapUserDetailsMapper());
         provider.setAccountDao(accountDao);
+
         return provider;
     }
 
-    private BindAuthenticator ldapAuthenticator(BaseLdapPathContextSource contextSource) {
+    /**
+     * Creates and configures the LDAP authenticator.
+     */
+    private BindAuthenticator createLdapAuthenticator(BaseLdapPathContextSource contextSource) {
         FilterBasedLdapUserSearch search = new FilterBasedLdapUserSearch(userSearchBase, userSearchFilter,
                 contextSource);
-
         search.setReturningAttributes(returningAttributes);
 
         BindAuthenticator authenticator = new BindAuthenticator(contextSource);
@@ -89,7 +130,10 @@ public class LdapAuthenticatorProviderBuilder {
         return authenticator;
     }
 
-    private ExtendedPasswordPolicyAwareContextSource contextSource() {
+    /**
+     * Creates and configures the LDAP context source for authentication.
+     */
+    private ExtendedPasswordPolicyAwareContextSource createContextSource() {
         ExtendedPasswordPolicyAwareContextSource context = new ExtendedPasswordPolicyAwareContextSource(url);
         context.setBase(baseDn);
         if (adminDn != null) {
@@ -100,11 +144,18 @@ public class LdapAuthenticatorProviderBuilder {
         return context;
     }
 
-    private GrantedAuthoritiesMapper ldapAuthoritiesMapper() {
+    /**
+     * Creates a default authority mapper to convert LDAP roles into Spring Security
+     * authorities.
+     */
+    private GrantedAuthoritiesMapper createAuthoritiesMapper() {
         return new SimpleAuthorityMapper();
     }
 
-    private DefaultLdapAuthoritiesPopulator ldapAuthoritiesPopulator(BaseLdapPathContextSource contextSource) {
+    /**
+     * Creates and configures the LDAP role populator.
+     */
+    private DefaultLdapAuthoritiesPopulator createLdapAuthoritiesPopulator(BaseLdapPathContextSource contextSource) {
         DefaultLdapAuthoritiesPopulator authoritiesPopulator = new DefaultLdapAuthoritiesPopulator(contextSource,
                 rolesSearchBase);
         authoritiesPopulator.setGroupSearchFilter(rolesSearchFilter);

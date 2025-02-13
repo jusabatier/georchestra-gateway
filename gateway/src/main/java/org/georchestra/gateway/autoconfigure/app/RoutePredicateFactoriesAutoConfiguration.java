@@ -22,9 +22,27 @@ import org.georchestra.gateway.handler.predicate.QueryParamRoutePredicateFactory
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
 
+/**
+ * Auto-configuration for custom route predicate factories in geOrchestra
+ * Gateway.
+ * <p>
+ * This configuration registers custom predicate factories that extend the
+ * routing capabilities of Spring Cloud Gateway.
+ * </p>
+ */
 @AutoConfiguration
 public class RoutePredicateFactoriesAutoConfiguration {
 
+    /**
+     * Registers a route predicate factory that allows matching requests based on
+     * query parameters.
+     * <p>
+     * This predicate enables routing decisions based on the presence and values of
+     * query parameters in incoming requests.
+     * </p>
+     *
+     * @return an instance of {@link QueryParamRoutePredicateFactory}
+     */
     @Bean
     QueryParamRoutePredicateFactory queryParamRoutePredicateFactory() {
         return new QueryParamRoutePredicateFactory();

@@ -24,6 +24,28 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.security.ConditionalOnDefaultWebSecurity;
 import org.springframework.context.annotation.Import;
 
+/**
+ * Auto-configuration for web security in geOrchestra Gateway.
+ * <p>
+ * This configuration is applied only when Spring Security's default web
+ * security is enabled, as determined by
+ * {@link ConditionalOnDefaultWebSecurity}.
+ * </p>
+ *
+ * <p>
+ * It imports:
+ * <ul>
+ * <li>{@link GatewaySecurityConfiguration} - Configures security settings for
+ * the gateway.</li>
+ * <li>{@link AccessRulesConfiguration} - Manages access rules and security
+ * policies.</li>
+ * </ul>
+ * </p>
+ *
+ * @see GatewaySecurityConfiguration
+ * @see AccessRulesConfiguration
+ * @see ConditionalOnDefaultWebSecurity
+ */
 @AutoConfiguration
 @ConditionalOnDefaultWebSecurity
 @Import({ GatewaySecurityConfiguration.class, AccessRulesConfiguration.class })

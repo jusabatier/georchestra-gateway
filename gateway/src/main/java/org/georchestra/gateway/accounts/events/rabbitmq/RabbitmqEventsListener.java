@@ -30,33 +30,69 @@ import com.google.common.annotations.VisibleForTesting;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Listens for messages from RabbitMQ and processes received events.
+ * <p>
+ * This listener processes incoming messages related to OAuth2 account creation
+ * events. It ensures that duplicate messages are not logged more than once by
+ * maintaining a synchronized set of processed message UIDs.
+ * </p>
+ *
+ * <p>
+ * If an error occurs while processing a message, it is logged and silently
+ * discarded.
+ * </p>
+ */
 @Slf4j
 public class RabbitmqEventsListener implements MessageListener {
 
+    /**
+     * The subject indicating that an OAuth2 account creation event has been
+     * received.
+     */
     public static final String OAUTH2_ACCOUNT_CREATION_RECEIVED = "OAUTH2-ACCOUNT-CREATION-RECEIVED";
 
-    private static Set<String> synReceivedMessageUid = Collections.synchronizedSet(new HashSet<String>());
+    /**
+     * A synchronized set to track processed message UIDs and prevent duplicate
+     * processing.
+     */
+    private static final Set<String> synReceivedMessageUid = Collections.synchronizedSet(new HashSet<>());
 
+    /**
+     * Processes an incoming RabbitMQ message.
+     * <p>
+     * If the message contains a subject matching
+     * {@code OAUTH2-ACCOUNT-CREATION-RECEIVED} and has not already been processed,
+     * it logs the message content.
+     * </p>
+     *
+     * @param message the incoming RabbitMQ message
+     */
+    @Override
     public void onMessage(Message message) {
         try {
             String messageBody = new String(message.getBody());
             JSONObject jsonObj = new JSONObject(messageBody);
             String uid = jsonObj.getString("uid");
             String subject = jsonObj.getString("subject");
-            if (subject.equals(OAUTH2_ACCOUNT_CREATION_RECEIVED)
-                    && !synReceivedMessageUid.stream().anyMatch(s -> s.equals(uid))) {
+
+            if (subject.equals(OAUTH2_ACCOUNT_CREATION_RECEIVED) && !synReceivedMessageUid.contains(uid)) {
                 String msg = jsonObj.getString("msg");
                 synReceivedMessageUid.add(uid);
                 log.info(msg);
             }
-
         } catch (Exception e) {
-            log.error("Exception caught when evaluating a message from RabbitMq, it will be silently discarded.", e);
+            log.error("Exception caught when evaluating a message from RabbitMQ. It will be silently discarded.", e);
         }
     }
 
+    /**
+     * Returns the set of received message UIDs for testing purposes.
+     *
+     * @return an unmodifiable view of the received message UIDs
+     */
     @VisibleForTesting
     public static Set<String> getSynReceivedMessageUid() {
-        return synReceivedMessageUid;
+        return Collections.unmodifiableSet(synReceivedMessageUid);
     }
 }

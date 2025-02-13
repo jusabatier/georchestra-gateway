@@ -26,19 +26,48 @@ import org.springframework.security.core.AuthenticationException;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Abstract decorator for {@link AuthenticationProvider} implementations.
+ * <p>
+ * This class delegates authentication and support checks to another
+ * {@link AuthenticationProvider}, allowing additional processing in subclasses
+ * without modifying the original authentication logic.
+ * </p>
+ *
+ * @see AuthenticationProvider
+ */
 @RequiredArgsConstructor
 public abstract class AuthenticationProviderDecorator implements AuthenticationProvider {
 
     private final @NonNull AuthenticationProvider delegate;
 
+    /**
+     * Determines whether this {@link AuthenticationProvider} supports the specified
+     * authentication class.
+     *
+     * @param authentication the authentication class to check
+     * @return {@code true} if the provider supports the given authentication type,
+     *         otherwise {@code false}
+     */
     @Override
     public boolean supports(Class<?> authentication) {
         return delegate.supports(authentication);
     }
 
+    /**
+     * Authenticates the given {@link Authentication} request.
+     * <p>
+     * This method delegates authentication to the underlying
+     * {@link AuthenticationProvider}.
+     * </p>
+     *
+     * @param authentication the authentication request
+     * @return a fully authenticated object, or {@code null} if authentication was
+     *         unsuccessful
+     * @throws AuthenticationException if authentication fails
+     */
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         return delegate.authenticate(authentication);
     }
-
 }

@@ -38,21 +38,61 @@ import org.springframework.util.unit.DataSize;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Main application class for the geOrchestra Gateway.
+ * <p>
+ * This class initializes the Spring Boot application, manages application-wide
+ * configuration, and sets up essential beans and event listeners.
+ * </p>
+ *
+ * <p>
+ * Most additional functionalities, such as security, routing, and external
+ * integrations, are contributed via Spring Boot
+ * {@link org.springframework.boot.autoconfigure.AutoConfiguration} classes.
+ * These auto-configurations enable features dynamically based on the
+ * application’s dependencies and configuration properties.
+ * </p>
+ *
+ * <p>
+ * The only explicitly defined controllers in this package are those required
+ * for gateway-specific endpoints, such as authentication entry points or
+ * request introspection. All other functionalities are provided through
+ * auto-configuration.
+ * </p>
+ */
 @Slf4j
 @SpringBootApplication
 @EnableConfigurationProperties(GeorchestraGatewaySecurityConfigProperties.class)
 public class GeorchestraGatewayApplication {
 
+    /**
+     * The route locator for retrieving gateway routes. Only used for reporting the
+     * number of configured routes at startup
+     */
     private @Autowired RouteLocator routeLocator;
+
+    /** The basename for message resources, configurable via properties. */
     private @Value("${spring.messages.basename:}") String messagesBasename;
 
+    /**
+     * Entry point for the geOrchestra Gateway application.
+     *
+     * @param args command-line arguments
+     */
     public static void main(String[] args) {
         SpringApplication.run(GeorchestraGatewayApplication.class, args);
     }
 
     /**
-     * REVISIT: why do we need to define this bean in the Application class and not
-     * in a configuration that depends on whether rabbit is enabled?
+     * Configures a {@link MessageSource} bean for loading internationalized
+     * messages.
+     * <p>
+     * This method sets up a {@link ReloadableResourceBundleMessageSource} that
+     * loads messages from {@code classpath:messages/login} and additional basenames
+     * configured via {@code spring.messages.basename}.
+     * </p>
+     *
+     * @return a configured {@link MessageSource} instance
      */
     @Bean
     MessageSource messageSource() {
@@ -64,11 +104,22 @@ public class GeorchestraGatewayApplication {
         return messageSource;
     }
 
+    /**
+     * Handles the {@link ApplicationReadyEvent}, logging essential application
+     * details.
+     * <p>
+     * This method retrieves environment properties, including the data directory,
+     * instance ID, available CPU cores, and memory usage, and logs them for
+     * debugging. It also counts the number of registered routes.
+     * </p>
+     *
+     * @param event the application ready event
+     */
     @EventListener(ApplicationReadyEvent.class)
-    public void onApplicationReady(ApplicationReadyEvent e) {
-        Environment env = e.getApplicationContext().getEnvironment();
+    public void onApplicationReady(ApplicationReadyEvent event) {
+        Environment env = event.getApplicationContext().getEnvironment();
         String datadir = env.getProperty("georchestra.datadir");
-        if (null != datadir) {
+        if (datadir != null) {
             datadir = new File(datadir).getAbsolutePath();
         }
         String app = env.getProperty("spring.application.name");
@@ -81,8 +132,12 @@ public class GeorchestraGatewayApplication {
                 routeCount, instanceId, cpus, maxMem);
     }
 
+    /**
+     * Retrieves the maximum memory allocated to the JVM and formats it in MB or GB.
+     *
+     * @return the formatted maximum memory value
+     */
     private String getMaxMem() {
-        String maxMem;
         DataSize maxMemBytes = DataSize.ofBytes(Runtime.getRuntime().maxMemory());
         double value = maxMemBytes.toKilobytes() / 1024d;
         String unit = "MB";
@@ -90,7 +145,6 @@ public class GeorchestraGatewayApplication {
             value = value / 1024d;
             unit = "GB";
         }
-        maxMem = String.format("%.2f %s", value, unit);
-        return maxMem;
+        return String.format("%.2f %s", value, unit);
     }
 }

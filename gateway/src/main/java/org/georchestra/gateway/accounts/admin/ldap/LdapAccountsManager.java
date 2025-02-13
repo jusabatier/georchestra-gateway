@@ -49,19 +49,64 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link AccountManager} that fetches and creates {@link GeorchestraUser}s from
- * the Georchestra extended LDAP service provided by an {@link AccountDao} and
- * {@link RoleDao}.
+ * Implementation of {@link AccountManager} that manages {@link GeorchestraUser}
+ * accounts through an extended LDAP service.
+ * <p>
+ * This class provides methods for fetching, creating, and managing user
+ * accounts stored in LDAP via an {@link AccountDao} and {@link RoleDao}. If a
+ * user does not exist, it ensures the necessary roles and organizational
+ * memberships are created.
+ * </p>
+ *
+ * <p>
+ * Role names are automatically prefixed with {@code "ROLE_"} if missing.
+ * </p>
+ *
+ * @see AccountManager
+ * @see AbstractAccountsManager
+ * @see DemultiplexingUsersApi
+ * @see AccountDao
+ * @see RoleDao
+ * @see OrgsDao
  */
 @Slf4j(topic = "org.georchestra.gateway.accounts.admin.ldap")
 class LdapAccountsManager extends AbstractAccountsManager {
 
+    /** Configuration properties for security-related settings. */
     private final @NonNull GeorchestraGatewaySecurityConfigProperties georchestraGatewaySecurityConfigProperties;
+
+    /** DAO for managing user accounts in LDAP. */
     private final @NonNull AccountDao accountDao;
+
+    /** DAO for managing roles and permissions in LDAP. */
     private final @NonNull RoleDao roleDao;
+
+    /** DAO for managing organizations in LDAP. */
     private final @NonNull OrgsDao orgsDao;
+
+    /** API for resolving users based on OAuth2 credentials. */
     private final @NonNull DemultiplexingUsersApi demultiplexingUsersApi;
 
+    /**
+     * Constructs an instance of {@code LdapAccountsManager}.
+     *
+     * @param eventPublisher                             the application event
+     *                                                   publisher used for
+     *                                                   publishing account-related
+     *                                                   events
+     * @param accountDao                                 the DAO responsible for
+     *                                                   managing user accounts in
+     *                                                   LDAP
+     * @param roleDao                                    the DAO responsible for
+     *                                                   managing roles in LDAP
+     * @param orgsDao                                    the DAO responsible for
+     *                                                   managing organizations in
+     *                                                   LDAP
+     * @param demultiplexingUsersApi                     the API used for resolving
+     *                                                   users by OAuth2 credentials
+     * @param georchestraGatewaySecurityConfigProperties configuration properties
+     *                                                   for security settings
+     */
     public LdapAccountsManager(ApplicationEventPublisher eventPublisher, AccountDao accountDao, RoleDao roleDao,
             OrgsDao orgsDao, DemultiplexingUsersApi demultiplexingUsersApi,
             GeorchestraGatewaySecurityConfigProperties georchestraGatewaySecurityConfigProperties) {
@@ -73,23 +118,77 @@ class LdapAccountsManager extends AbstractAccountsManager {
         this.georchestraGatewaySecurityConfigProperties = georchestraGatewaySecurityConfigProperties;
     }
 
+    /**
+     * Retrieves a stored user based on their OAuth2 provider and unique identifier.
+     * <p>
+     * This method queries the {@link DemultiplexingUsersApi} for a user with the
+     * given OAuth2 provider and unique identifier. If found, the user's roles are
+     * normalized to ensure they are properly prefixed.
+     * </p>
+     *
+     * @param oAuth2Provider the OAuth2 provider (e.g., Google, GitHub)
+     * @param oAuth2Uid      the unique identifier assigned by the OAuth2 provider
+     * @return an {@link Optional} containing the user if found, otherwise empty
+     */
     @Override
     protected Optional<GeorchestraUser> findByOAuth2Uid(@NonNull String oAuth2Provider, @NonNull String oAuth2Uid) {
         return demultiplexingUsersApi.findByOAuth2Uid(oAuth2Provider, oAuth2Uid).map(this::ensureRolesPrefixed);
     }
 
+    /**
+     * Retrieves a stored user based on their username.
+     * <p>
+     * This method queries the {@link DemultiplexingUsersApi} for a user with the
+     * given username. If found, the user's roles are normalized to ensure they are
+     * properly prefixed.
+     * </p>
+     *
+     * @param username the username to search for
+     * @return an {@link Optional} containing the user if found, otherwise empty
+     */
     @Override
     protected Optional<GeorchestraUser> findByUsername(@NonNull String username) {
         return demultiplexingUsersApi.findByUsername(username).map(this::ensureRolesPrefixed);
     }
 
+    /**
+     * Ensures all roles assigned to a user are prefixed with {@code "ROLE_"}.
+     * <p>
+     * If a role does not start with "ROLE_", this method adds the prefix. This
+     * normalization ensures consistency when handling role-based access.
+     * </p>
+     *
+     * @param user the user whose roles need to be normalized
+     * @return the updated {@link GeorchestraUser} with properly formatted roles
+     */
     private GeorchestraUser ensureRolesPrefixed(GeorchestraUser user) {
         List<String> roles = user.getRoles().stream().filter(Objects::nonNull)
-                .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r).toList();
-        user.setRoles(new ArrayList<>(roles));
+                .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r).toList(); // Converts to an immutable list
+        user.setRoles(new ArrayList<>(roles)); // Ensures mutability
         return user;
     }
 
+    /**
+     * Creates a new user in the LDAP repository if one does not already exist.
+     * <p>
+     * This method first attempts to insert the user into LDAP. If an error occurs
+     * due to duplicate emails or usernames, appropriate exceptions are thrown.
+     * </p>
+     * <p>
+     * If the user is successfully inserted, their organization is ensured to exist.
+     * If an error occurs while managing the organization, the user account creation
+     * is rolled back.
+     * </p>
+     * <p>
+     * Finally, roles are assigned to the user to ensure correct access levels.
+     * </p>
+     *
+     * @param mapped the user to create
+     * @throws DuplicatedEmailFoundException    if a user with the same email
+     *                                          already exists
+     * @throws DuplicatedUsernameFoundException if a user with the same username
+     *                                          already exists
+     */
     @Override
     protected void createInternal(GeorchestraUser mapped) throws DuplicatedEmailFoundException {
         Account newAccount = mapToAccountBrief(mapped);
@@ -115,6 +214,12 @@ class LdapAccountsManager extends AbstractAccountsManager {
         ensureRolesExist(mapped, newAccount);
     }
 
+    /**
+     * Ensures all roles assigned to a user are prefixed with {@code "ROLE_"}.
+     *
+     * @param user the user whose roles need to be normalized
+     * @return the updated user with properly formatted roles
+     */
     private void ensureRolesExist(GeorchestraUser mapped, Account newAccount) {
         try {// account created, add roles
             if (!mapped.getRoles().contains("ROLE_USER")) {
@@ -135,6 +240,11 @@ class LdapAccountsManager extends AbstractAccountsManager {
         }
     }
 
+    /**
+     * Ensures the organization associated with a user exists in LDAP.
+     *
+     * @param newAccount the account whose organization needs verification
+     */
     private void ensureRoleExists(String role) throws DataServiceException {
         try {
             roleDao.findByCommonName(role);
@@ -147,6 +257,20 @@ class LdapAccountsManager extends AbstractAccountsManager {
         }
     }
 
+    /**
+     * Maps a {@link GeorchestraUser} to a brief {@link Account} representation for
+     * LDAP storage.
+     * <p>
+     * This method extracts key user details such as username, email, and
+     * organization, and constructs an {@link Account} object suitable for insertion
+     * into LDAP. The generated account is marked as non-pending and assigned a
+     * default organization if none is provided.
+     * </p>
+     *
+     * @param preAuth the pre-authenticated {@link GeorchestraUser} containing user
+     *                details
+     * @return a newly created {@link Account} object with mapped attributes
+     */
     private Account mapToAccountBrief(@NonNull GeorchestraUser preAuth) {
         String username = preAuth.getUsername();
         String email = preAuth.getEmail();
@@ -183,6 +307,12 @@ class LdapAccountsManager extends AbstractAccountsManager {
         }
     }
 
+    /**
+     * Creates an organization and assigns the user to it.
+     *
+     * @param newAccount the user account to add to the new organization
+     * @param orgId      the identifier of the organization
+     */
     private void createOrgAndAddAccount(Account newAccount, final String orgId) {
         try {
             log.info("Org {} does not exist, trying to create it", orgId);
@@ -200,6 +330,13 @@ class LdapAccountsManager extends AbstractAccountsManager {
         orgsDao.update(org);
     }
 
+    /**
+     * Finds an organization by its identifier.
+     *
+     * @param orgId the identifier of the organization
+     * @return an {@link Optional} containing the organization if found, otherwise
+     *         empty
+     */
     private Optional<Org> findOrg(String orgId) {
         try {
             return Optional.of(orgsDao.findByCommonName(orgId));
@@ -208,6 +345,11 @@ class LdapAccountsManager extends AbstractAccountsManager {
         }
     }
 
+    /**
+     * Rolls back user creation if an error occurs.
+     *
+     * @param newAccount the user account to remove from LDAP
+     */
     private void rollbackAccount(Account newAccount) {
         try {// roll-back account
             accountDao.delete(newAccount);
@@ -216,6 +358,9 @@ class LdapAccountsManager extends AbstractAccountsManager {
         }
     }
 
+    /**
+     * Factory method to create a new org with the given id and return it
+     */
     private Org newOrg(final String orgId) {
         Org org = new Org();
         org.setId(orgId);

@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License along with
  * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.georchestra.gateway.autoconfigure.security;
 
 import java.lang.annotation.Documented;
@@ -30,7 +29,19 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.ldap.core.LdapTemplate;
 
 /**
+ * Condition that enables a bean if LDAP support is available and at least one
+ * LDAP data source is enabled.
+ * <p>
+ * This annotation ensures that a component is only loaded when:
+ * <ul>
+ * <li>The {@link LdapTemplate} class is present on the classpath.</li>
+ * <li>At least one LDAP configuration is enabled, as determined by
+ * {@link AtLeastOneLdapDatasourceEnabledCondition}.</li>
+ * </ul>
+ * </p>
  *
+ * @see AtLeastOneLdapDatasourceEnabledCondition
+ * @see LdapTemplate
  */
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)

@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License along with
  * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.georchestra.gateway.security.ldap.extended;
 
 import java.util.ArrayList;
@@ -37,14 +36,19 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 /**
- * {@link GeorchestraUserMapperExtension} that maps LDAP-authenticated token to
- * {@link GeorchestraUser} by calling {@link UsersApi#findByUsername(String)},
- * with the authentication token's principal name as argument.
+ * Maps LDAP-authenticated tokens to {@link GeorchestraUser} instances by
+ * retrieving user details from the configured {@link UsersApi}.
  * <p>
- * Resolves only {@link GeorchestraUserNamePasswordAuthenticationToken}, using
- * its {@link GeorchestraUserNamePasswordAuthenticationToken#getConfigName()
- * configName} to disambiguate amongst different configured LDAP databases.
- * 
+ * This implementation specifically handles instances of
+ * {@link GeorchestraUserNamePasswordAuthenticationToken}, using its
+ * {@link GeorchestraUserNamePasswordAuthenticationToken#getConfigName()
+ * configuration name} to resolve users from the correct LDAP database.
+ * </p>
+ * <p>
+ * Additionally, this class ensures role name consistency by normalizing
+ * mismatched prefixes between LDAP authorities and geOrchestra roles.
+ * </p>
+ *
  * @see DemultiplexingUsersApi
  */
 @RequiredArgsConstructor
@@ -54,13 +58,19 @@ class GeorchestraLdapAuthenticatedUserMapper implements GeorchestraUserMapperExt
 
     @Override
     public Optional<GeorchestraUser> resolve(Authentication authToken) {
-        return Optional.ofNullable(authToken)//
-                .filter(GeorchestraUserNamePasswordAuthenticationToken.class::isInstance)
-                .map(GeorchestraUserNamePasswordAuthenticationToken.class::cast)//
-                .filter(token -> token.getPrincipal() instanceof LdapUserDetails)//
-                .flatMap(this::map);
+        return Optional.ofNullable(authToken).filter(GeorchestraUserNamePasswordAuthenticationToken.class::isInstance)
+                .map(GeorchestraUserNamePasswordAuthenticationToken.class::cast)
+                .filter(token -> token.getPrincipal() instanceof LdapUserDetails).flatMap(this::map);
     }
 
+    /**
+     * Retrieves user details from the appropriate LDAP database based on the
+     * authentication token's configuration name.
+     *
+     * @param token the LDAP authentication token
+     * @return an {@link Optional} containing the resolved {@link GeorchestraUser},
+     *         or empty if no user was found
+     */
     Optional<GeorchestraUser> map(GeorchestraUserNamePasswordAuthenticationToken token) {
         final LdapUserDetails principal = (LdapUserDetails) token.getPrincipal();
         final String ldapConfigName = token.getConfigName();
@@ -70,13 +80,23 @@ class GeorchestraLdapAuthenticatedUserMapper implements GeorchestraUserMapperExt
         return user.map(u -> fixPrefixedRoleNames(u, token));
     }
 
+    /**
+     * Ensures that role names are properly prefixed with "ROLE_" for consistency
+     * between LDAP and geOrchestra role management.
+     * <p>
+     * Also updates LDAP password expiration details in the user object.
+     * </p>
+     *
+     * @param user  the resolved user object
+     * @param token the authentication token containing authorities
+     * @return the updated {@link GeorchestraUser} with normalized roles
+     */
     private GeorchestraUser fixPrefixedRoleNames(GeorchestraUser user,
             GeorchestraUserNamePasswordAuthenticationToken token) {
 
         final LdapUserDetailsImpl principal = (LdapUserDetailsImpl) token.getPrincipal();
 
-        // Fix role name mismatch between authority provider (adds ROLE_ prefix) and
-        // users api
+        // Ensure consistent role naming by normalizing both authorities and user roles
         Stream<String> authorityRoleNames = token.getAuthorities().stream()
                 .filter(SimpleGrantedAuthority.class::isInstance).map(GrantedAuthority::getAuthority)
                 .map(this::normalize);
@@ -84,7 +104,9 @@ class GeorchestraLdapAuthenticatedUserMapper implements GeorchestraUserMapperExt
         Stream<String> userRoles = user.getRoles().stream().map(this::normalize);
 
         List<String> roles = Stream.concat(authorityRoleNames, userRoles).distinct().toList();
-        user.setRoles(new ArrayList<>(roles));// mutable
+        user.setRoles(new ArrayList<>(roles));
+
+        // Set LDAP password expiration warnings if applicable
         if (principal.getTimeBeforeExpiration() < Integer.MAX_VALUE) {
             user.setLdapWarn(true);
             user.setLdapRemainingDays(String.valueOf(principal.getTimeBeforeExpiration() / (60 * 60 * 24)));
@@ -95,6 +117,12 @@ class GeorchestraLdapAuthenticatedUserMapper implements GeorchestraUserMapperExt
         return user;
     }
 
+    /**
+     * Normalizes role names by ensuring they start with "ROLE_".
+     *
+     * @param role the original role name
+     * @return the normalized role name
+     */
     private String normalize(String role) {
         return role.startsWith("ROLE_") ? role : "ROLE_" + role;
     }

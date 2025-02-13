@@ -86,7 +86,7 @@ class LdapConfigPropertiesValidationsTest {
                 , "georchestra.gateway.security.ldap.basic2.enabled: false" //
                 , "georchestra.gateway.security.ldap.basic2.url:" //
         ).run(context -> {
-            assertThat(context).getFailure().hasStackTraceContaining("LDAP url is required")
+            assertThat(context).getFailure().hasStackTraceContaining("LDAP URL is required")
                     .hasStackTraceContaining("ldap.[basic1].url").hasStackTraceContaining("ldap.[extended1].url")
                     .hasStackTraceContaining("ldap.[ad1].url");
         });
@@ -161,7 +161,7 @@ class LdapConfigPropertiesValidationsTest {
                 , "georchestra.gateway.security.ldap.extended1.users.searchFilter: " //
         ).run(context -> {
             assertThat(context).getFailure()//
-                    .hasStackTraceContaining("LDAP users searchFilter is required for regular LDAP configs")//
+                    .hasStackTraceContaining("LDAP users search filter is required for standard LDAP configurations")//
                     .hasStackTraceContaining("ldap.[ldap1].users.searchFilter")//
                     .hasStackTraceContaining("ldap.[extended1].users.searchFilter");
         });
@@ -187,7 +187,7 @@ class LdapConfigPropertiesValidationsTest {
                 , "georchestra.gateway.security.ldap.extended1.roles.rdn: " //
         ).run(context -> {
             assertThat(context).getFailure()//
-                    .hasStackTraceContaining("Roles Relative distinguished name is required")//
+                    .hasStackTraceContaining("Roles Relative Distinguished Name is required")//
                     .hasStackTraceContaining("ldap.[ldap1].roles.rdn")//
                     .hasStackTraceContaining("ldap.[extended1].roles.rdn");
         });
@@ -215,7 +215,7 @@ class LdapConfigPropertiesValidationsTest {
                 , "georchestra.gateway.security.ldap.extended1.roles.searchFilter: "//
         ).run(context -> {
             assertThat(context).getFailure()//
-                    .hasStackTraceContaining("Roles searchFilter is required")//
+                    .hasStackTraceContaining("Roles search filter is required")//
                     .hasStackTraceContaining("ldap.[ldap1].roles.searchFilter")//
                     .hasStackTraceContaining("ldap.[extended1].roles.searchFilter");
         });
@@ -235,7 +235,7 @@ class LdapConfigPropertiesValidationsTest {
                 , "georchestra.gateway.security.ldap.extended1.orgs.rdn: " //
         ).run(context -> {
             assertThat(context).getFailure()//
-                    .hasStackTraceContaining("Organizations search base RDN is required if extended is true")//
+                    .hasStackTraceContaining("Organizations search base RDN is required if 'extended' is true")//
                     .hasStackTraceContaining("ldap.[extended1].orgs.rdn");
         });
     }

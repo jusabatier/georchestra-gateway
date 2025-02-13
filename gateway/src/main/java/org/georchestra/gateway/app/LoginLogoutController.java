@@ -18,13 +18,6 @@
  */
 package org.georchestra.gateway.app;
 
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
-import javax.annotation.PostConstruct;
-
 import org.apache.commons.lang3.tuple.Pair;
 import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties;
 import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties.Server;
@@ -32,12 +25,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientProperties;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
-@RestController
+import javax.annotation.PostConstruct;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+// We have to use the @Controller annotation, not the @RestController one
+// here, so that the login/logout page will go through the thymeleaf templating
+// system.
+@Controller
 public class LoginLogoutController {
 
     private @Autowired(required = false) GeorchestraGatewaySecurityConfigProperties georchestraGatewaySecurityConfigProperties;

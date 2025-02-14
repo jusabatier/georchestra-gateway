@@ -10,11 +10,11 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.georchestra.gateway.app;
 
@@ -46,9 +46,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySources;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.server.ServerWebExchange;
+
+import reactor.core.publisher.Mono;
 
 @SpringBootTest(properties = "georchestra.datadir=src/test/resources/test-datadir", webEnvironment = WebEnvironment.MOCK)
 @AutoConfigureWebTestClient(timeout = "PT200S")
@@ -58,9 +59,10 @@ class GeorchestraGatewayApplicationTests {
     private @Autowired Environment env;
     private @Autowired RouteLocator routeLocator;
 
-    private @Autowired GeorchestraGatewayApplication application;
     private @Autowired WebTestClient testClient;
 
+    private @Autowired WhoamiController whoamiController;
+    private @Autowired StyleConfigController configController;
     private @Autowired ApplicationContext context;
 
     @Test
@@ -94,7 +96,7 @@ class GeorchestraGatewayApplicationTests {
         Authentication auth = new GeorchestraUserNamePasswordAuthenticationToken("test", orig);
         ServerWebExchange exch = Mockito.mock(ServerWebExchange.class);
 
-        Map<String, Object> ret = application.whoami(auth, exch).block();
+        Map<String, Object> ret = whoamiController.whoami(auth, exch).block();
 
         GeorchestraUserNamePasswordAuthenticationToken toTest = (GeorchestraUserNamePasswordAuthenticationToken) ret
                 .get("org.georchestra.gateway.security.ldap.extended.GeorchestraUserNamePasswordAuthenticationToken");
@@ -121,5 +123,13 @@ class GeorchestraGatewayApplicationTests {
         testClient.get().uri("/path/to/unavailable/service")//
                 .header("Host", "localhost")//
                 .exchange().expectStatus().isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    @Test
+    void testStyleConfigController() {
+        Mono<Map<String, Object>> response = configController.styleConfig();
+        assertThat(response).isNotNull();
+        Map<String, Object> config = response.block();
+        assertThat(config).containsKey("stylesheet").containsKey("logo");
     }
 }

@@ -10,11 +10,11 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.georchestra.gateway.filter.headers;
 
@@ -106,8 +106,35 @@ class RemoveHeadersGatewayFilterFactoryTest {
         assertTrue(secHeadersConfig.matches("SEC-USER"));
         assertTrue(secHeadersConfig.matches("sec-org"));
         assertTrue(secHeadersConfig.matches("SEC-ORG"));
-        assertTrue(secHeadersConfig.matches("authoriZation"), "Basic Auth header shoulud should be filtered");
+        assertTrue(secHeadersConfig.matches("authoriZation"), "Basic Auth header should should be filtered");
         assertFalse(secHeadersConfig.matches("SECORG"));
+    }
+
+    @Test
+    void testHeaderFilterOnHeaderNameAndValues() {
+        RegExConfig headersConfig = new RemoveHeadersGatewayFilterFactory.RegExConfig(
+                "(?i)^(sec-.*|Authorization:(?!\s*Bearer\s*$))"
+        );
+        GatewayFilter toTest = new RemoveHeadersGatewayFilterFactory().apply(headersConfig);
+        HttpHeaders headers = headers(
+                "Authorization", "Basic YWRtaW46ZWNlZXdhZGVpY2hhZTJhaWZhZVF1YWkyb29OZ2llN3U=",
+                "Authorization", "Bearer ahlai7Eer1Vuz8ThaiY4ahbohdeish7a",
+                "sec-roles", "ROLE_ADMINISTRATOR",
+                "sec-username", "testadmin"
+        );
+        MockServerHttpRequest request = MockServerHttpRequest.get("/").headers(headers).build();
+        ServerWebExchange exchange = MockServerWebExchange.from(request);
+        GatewayFilterChain chain = mock(GatewayFilterChain.class);
+        ArgumentCaptor<ServerWebExchange> filterArgCaptor = ArgumentCaptor.forClass(ServerWebExchange.class);
+
+        toTest.filter(exchange, chain);
+
+        verify(chain).filter(filterArgCaptor.capture());
+        ServerWebExchange mutatedExchange = filterArgCaptor.getValue();
+        HttpHeaders mutatedHeaders = mutatedExchange.getRequest().getHeaders();
+        HttpHeaders expected = headers("Authorization", "Bearer ahlai7Eer1Vuz8ThaiY4ahbohdeish7a");
+        assertEquals(expected, mutatedHeaders);
+
     }
 
     private HttpHeaders headers(String... kvp) {

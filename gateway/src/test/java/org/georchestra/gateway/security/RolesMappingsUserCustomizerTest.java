@@ -10,11 +10,11 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
 
 package org.georchestra.gateway.security;
@@ -60,11 +60,11 @@ class RolesMappingsUserCustomizerTest {
     void constructorCreatesValidPatterns() {
         Pattern pattern;
 
-        pattern = RolesMappingsUserCustomizer.toPattern("ROLE.GDI.USER");
+        pattern = RolesMappingsUserCustomizer.compilePattern("ROLE.GDI.USER");
         assertTrue(pattern.matcher("ROLE.GDI.USER").matches());
         assertFalse(pattern.matcher("ROLE.GDI_USER").matches());
 
-        pattern = RolesMappingsUserCustomizer.toPattern("ROLE.*.*.ADMIN");
+        pattern = RolesMappingsUserCustomizer.compilePattern("ROLE.*.*.ADMIN");
         assertTrue(pattern.matcher("ROLE.GDI.GS.ADMIN").matches());
         assertFalse(pattern.matcher("ROLE.GDI.GS.USER").matches());
     }

@@ -1,10 +1,14 @@
 package org.georchestra.gateway.accounts.admin;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.Map;
+
 import org.georchestra.ds.orgs.OrgsDao;
-import org.georchestra.ds.users.Account;
 import org.georchestra.ds.users.AccountDao;
 import org.georchestra.gateway.app.GeorchestraGatewayApplication;
-import org.georchestra.gateway.security.preauth.HeaderPreauthConfigProperties;
 import org.georchestra.testcontainers.ldap.GeorchestraLdapContainer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
@@ -13,16 +17,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationContext;
 import org.springframework.ldap.NameNotFoundException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
-
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration tests for {@link CreateAccountUserCustomizer}.
@@ -33,7 +32,6 @@ import static org.junit.jupiter.api.Assertions.*;
 public class CreateAccountUserCustomizerIT {
     private @Autowired WebTestClient testClient;
 
-    private @Autowired ApplicationContext context;
     private @Autowired AccountDao accountDao;
 
     private @Autowired OrgsDao orgsDao;
@@ -101,7 +99,8 @@ public class CreateAccountUserCustomizerIT {
         return spec;
     }
 
-    public @Test void testPreauthenticatedHeadersAccess() throws Exception {
+    @Test
+    void testPreauthenticatedHeadersAccess() throws Exception {
         prepareWebTestClientHeaders(testClient.get(), NOT_EXISTING_ACCOUNT_HEADERS).uri("/whoami")//
                 .exchange()//
                 .expectStatus()//
@@ -113,7 +112,8 @@ public class CreateAccountUserCustomizerIT {
         assertNotNull(accountDao.findByUID("pmartin"));
     }
 
-    public @Test void testPreauthenticatedHeadersAccessCreateOrg() throws Exception {
+    @Test
+    void testPreauthenticatedHeadersAccessCreateOrg() throws Exception {
         assertThrows(NameNotFoundException.class, () -> accountDao.findByUID("pmartin2"));
         prepareWebTestClientHeaders(testClient.get(), ANOTHER_NOT_EXISTING_ACCOUNT_HEADERS).uri("/whoami")//
                 .exchange()//
@@ -131,7 +131,8 @@ public class CreateAccountUserCustomizerIT {
         assertNotNull(orgsDao.findByCommonName("NEWORG"));
     }
 
-    public @Test void testPreauthenticatedHeadersAccessUpdateOrg() throws Exception {
+    @Test
+    void testPreauthenticatedHeadersAccessUpdateOrg() throws Exception {
         assertThrows(NameNotFoundException.class, () -> accountDao.findByUID("pmartin3"));
         prepareWebTestClientHeaders(testClient.get(), ANOTHER_NOT_EXISTING_ACCOUNT_HEADERS_EXISTING_ORG)//
                 .uri("/whoami")//
@@ -145,10 +146,11 @@ public class CreateAccountUserCustomizerIT {
         // Make sure the account has been created
         assertNotNull(accountDao.findByUID("pmartin3"));
         // And the PSC organization contains our newly created user
-        assertNotNull(orgsDao.findByCommonName("PSC").getMembers().contains("pmartin3"));
+        assertThat(orgsDao.findByCommonName("PSC").getMembers()).contains("pmartin3");
     }
 
-    public @Test void testPreauthenticatedHeadersAccessExistingAccount() throws Exception {
+    @Test
+    void testPreauthenticatedHeadersAccessExistingAccount() throws Exception {
         // the account should already exist before issuing the request
         assertNotNull(accountDao.findByUID("testadmin"));
         prepareWebTestClientHeaders(testClient.get(), EXISTING_ADMIN_ACCOUNT_HEADERS).uri("/whoami")//
@@ -166,7 +168,8 @@ public class CreateAccountUserCustomizerIT {
                         "ROLE_EMAILPROXY"));
     }
 
-    public @Test void testPreauthenticatedHeadersWithOrgNotNullButEmpty() throws Exception {
+    @Test
+    void testPreauthenticatedHeadersWithOrgNotNullButEmpty() {
         prepareWebTestClientHeaders(testClient.get(), NON_EXISTING_USER_WITH_ORG_EMPTY_HEADERS).uri("/whoami")//
                 .exchange()//
                 .expectStatus()//

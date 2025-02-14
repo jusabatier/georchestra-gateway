@@ -10,11 +10,11 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.georchestra.gateway.filter.global;
 
@@ -46,38 +46,51 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 /**
- * A {@link GlobalFilter} that resolves the {@link GeorchestraTargetConfig
- * configuration} for the request's matched {@link Route} and
- * {@link GeorchestraTargetConfig#setTarget stores} it to be
- * {@link GeorchestraTargetConfig#getTarget acquired} by non-global filters as
- * needed.
+ * A {@link GlobalFilter} that resolves and stores the
+ * {@link GeorchestraTargetConfig} for the matched {@link Route}, enabling
+ * subsequent filters to access configuration details such as role-based access
+ * rules and HTTP header mappings.
+ * <p>
+ * This filter executes after user resolution in
+ * {@link ResolveGeorchestraUserGlobalFilter} and before request routing in
+ * {@link RouteToRequestUrlFilter}.
+ * </p>
  */
 @RequiredArgsConstructor
 @Slf4j
 public class ResolveTargetGlobalFilter implements GlobalFilter, Ordered {
 
+    /**
+     * The execution order of this filter, ensuring it runs after user resolution
+     * but before request routing.
+     */
     public static final int ORDER = ResolveGeorchestraUserGlobalFilter.ORDER + 1;
 
     private final @NonNull GatewayConfigProperties config;
 
     /**
-     * @return a lower precedence than {@link RouteToRequestUrlFilter}'s, in order
-     *         to make sure the matched {@link Route} has been set as a
-     *         {@link ServerWebExchange#getAttributes attribute} when
-     *         {@link #filter} is called.
+     * Ensures that this filter runs after the matched {@link Route} has been set as
+     * an attribute in the {@link ServerWebExchange}.
+     *
+     * @return the execution order of this filter
      */
-    public @Override int getOrder() {
+    @Override
+    public int getOrder() {
         return ResolveTargetGlobalFilter.ORDER;
     }
 
     /**
-     * Resolves the matched {@link Route} and its corresponding
-     * {@link GeorchestraTargetConfig}, if possible, and proceeds with the filter
-     * chain.
+     * Resolves the {@link GeorchestraTargetConfig} for the matched {@link Route}
+     * and stores it in the request exchange attributes.
+     *
+     * @param exchange the current server exchange
+     * @param chain    the gateway filter chain
+     * @return a {@link Mono} that proceeds with the filter chain execution
      */
-    public @Override Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         Route route = (Route) exchange.getAttributes().get(GATEWAY_ROUTE_ATTR);
-        Objects.requireNonNull(route, "no route matched, filter shouldn't be hit");
+        Objects.requireNonNull(route, "No route matched, filter should not be executed");
 
         GeorchestraTargetConfig targetConfig = resolveTarget(route);
         log.debug("Storing geOrchestra target config for Route {} request context", route.getId());
@@ -85,28 +98,54 @@ public class ResolveTargetGlobalFilter implements GlobalFilter, Ordered {
         return chain.filter(exchange);
     }
 
+    /**
+     * Resolves the {@link GeorchestraTargetConfig} for the given route by applying
+     * the service-specific or global access rules and header mappings.
+     *
+     * @param route the matched route
+     * @return a {@link GeorchestraTargetConfig} containing the relevant
+     *         configuration
+     */
     @VisibleForTesting
     @NonNull
     GeorchestraTargetConfig resolveTarget(@NonNull Route route) {
-
         GeorchestraTargetConfig target = new GeorchestraTargetConfig();
 
         Optional<Service> service = findService(route);
-
         setAccessRules(target, service);
         setHeaderMappings(target, service);
 
         return target;
     }
 
+    /**
+     * Determines the applicable access rules for the target configuration.
+     * <p>
+     * If the matched service defines access rules, they are applied; otherwise, the
+     * global access rules from {@link GatewayConfigProperties} are used.
+     * </p>
+     *
+     * @param target  the target configuration to update
+     * @param service the matched service, if available
+     */
     private void setAccessRules(GeorchestraTargetConfig target, Optional<Service> service) {
         List<RoleBasedAccessRule> globalAccessRules = config.getGlobalAccessRules();
-        var targetAccessRules = service.map(Service::getAccessRules).filter(Objects::nonNull).filter(l -> !l.isEmpty())
-                .orElse(globalAccessRules);
+        List<RoleBasedAccessRule> targetAccessRules = service.map(Service::getAccessRules).filter(Objects::nonNull)
+                .filter(l -> !l.isEmpty()).orElse(globalAccessRules);
 
         target.accessRules(targetAccessRules);
     }
 
+    /**
+     * Determines the applicable HTTP header mappings for the target configuration.
+     * <p>
+     * If the matched service defines custom header mappings, they are merged with
+     * the global default headers. Otherwise, only the global defaults are applied.
+     * </p>
+     *
+     * @param target  the target configuration to update
+     * @param service the matched service, if available
+     */
     private void setHeaderMappings(GeorchestraTargetConfig target, Optional<Service> service) {
         HeaderMappings defaultHeaders = config.getDefaultHeaders();
         HeaderMappings mergedHeaders = service.flatMap(Service::headers)
@@ -115,10 +154,24 @@ public class ResolveTargetGlobalFilter implements GlobalFilter, Ordered {
         target.headers(mergedHeaders);
     }
 
+    /**
+     * Merges the default global headers with service-specific headers.
+     *
+     * @param defaults the global default headers
+     * @param service  the service-specific headers
+     * @return a merged {@link HeaderMappings} instance
+     */
     private HeaderMappings merge(HeaderMappings defaults, HeaderMappings service) {
         return defaults.copy().merge(service);
     }
 
+    /**
+     * Finds the matching service definition for the given route.
+     *
+     * @param route the matched route
+     * @return an {@link Optional} containing the matched {@link Service}, or empty
+     *         if not found
+     */
     private Optional<Service> findService(@NonNull Route route) {
         final URI routeURI = route.getUri();
 
@@ -128,8 +181,6 @@ public class ResolveTargetGlobalFilter implements GlobalFilter, Ordered {
                 return Optional.of(service);
             }
         }
-
         return Optional.empty();
     }
-
 }

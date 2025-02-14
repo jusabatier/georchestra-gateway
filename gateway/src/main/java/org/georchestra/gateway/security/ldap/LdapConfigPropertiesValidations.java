@@ -10,11 +10,11 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.georchestra.gateway.security.ldap;
 
@@ -26,21 +26,53 @@ import org.springframework.validation.Errors;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Validator for LDAP configuration properties.
+ * <p>
+ * This class ensures that necessary LDAP configuration fields are correctly
+ * defined based on the type of LDAP authentication used.
+ * </p>
+ *
+ * <p>
+ * Validation rules include:
+ * </p>
+ * <ul>
+ * <li>Ensuring required properties such as URL and base DN are provided.</li>
+ * <li>Applying additional validation rules for extended LDAP
+ * configurations.</li>
+ * <li>Ensuring Active Directory configurations do not include unnecessary
+ * properties.</li>
+ * </ul>
+ */
 @Slf4j(topic = "org.georchestra.gateway.security.ldap")
 public class LdapConfigPropertiesValidations {
 
+    /**
+     * Validates an LDAP configuration.
+     *
+     * @param name   the LDAP configuration name
+     * @param config the {@link Server} configuration containing LDAP settings
+     * @param errors the {@link Errors} object for capturing validation errors
+     */
     public void validate(String name, Server config, Errors errors) {
         if (!config.isEnabled()) {
-            log.debug("ignoring validation of LDAP config {}, enabled = false", name);
+            log.debug("Ignoring validation of LDAP config '{}', enabled = false", name);
             return;
         }
-        final String url = format("ldap.[%s].url", name);
-        rejectIfEmptyOrWhitespace(errors, url, "", "LDAP url is required (e.g.: ldap://my.ldap.com:389)");
 
+        // Ensure the LDAP URL is defined
+        final String url = format("ldap.[%s].url", name);
+        rejectIfEmptyOrWhitespace(errors, url, "", "LDAP URL is required (e.g., ldap://my.ldap.com:389)");
+
+        // Validate base LDAP configuration
         validateSimpleLdap(name, config, errors);
+
+        // Validate geOrchestra-specific extensions if enabled
         if (config.isExtended()) {
             validateGeorchestraExtensions(name, config, errors);
         }
+
+        // Apply specific validation rules for Active Directory configurations
         if (config.isActiveDirectory()) {
             validateActiveDirectory(name, config, errors);
         } else {
@@ -48,39 +80,76 @@ public class LdapConfigPropertiesValidations {
         }
     }
 
+    /**
+     * Validates essential LDAP properties for a standard LDAP configuration.
+     *
+     * @param name   the LDAP configuration name
+     * @param config the LDAP server configuration
+     * @param errors the validation error object
+     */
     private void validateSimpleLdap(String name, Server config, Errors errors) {
         rejectIfEmptyOrWhitespace(errors, format("ldap.[%s].baseDn", name), "",
-                "LDAP base DN is required. e.g.: dc=georchestra,dc=org");
+                "LDAP base DN is required (e.g., dc=georchestra,dc=org)");
 
         rejectIfEmptyOrWhitespace(errors, format("ldap.[%s].users.rdn", name), "",
-                "LDAP users RDN (Relative Distinguished Name) is required. e.g.: ou=users,dc=georchestra,dc=org");
+                "LDAP users RDN (Relative Distinguished Name) is required (e.g., ou=users,dc=georchestra,dc=org)");
 
         rejectIfEmptyOrWhitespace(errors, format("ldap.[%s].roles.rdn", name), "",
-                "Roles Relative distinguished name is required. e.g.: ou=roles");
+                "Roles Relative Distinguished Name is required (e.g., ou=roles)");
 
         rejectIfEmptyOrWhitespace(errors, format("ldap.[%s].roles.searchFilter", name), "",
-                "Roles searchFilter is required. e.g.: (member={0})");
+                "Roles search filter is required (e.g., (member={0}))");
     }
 
+    /**
+     * Ensures that the user search filter is mandatory for non-Active Directory
+     * configurations.
+     *
+     * @param name   the LDAP configuration name
+     * @param errors the validation error object
+     */
     private void validateUsersSearchFilterMandatory(String name, Errors errors) {
         rejectIfEmptyOrWhitespace(errors, format("ldap.[%s].users.searchFilter", name), "",
-                "LDAP users searchFilter is required for regular LDAP configs. e.g.: (uid={0}), and optional for Active Directory. e.g.: (&(objectClass=user)(userPrincipalName={0}))");
+                "LDAP users search filter is required for standard LDAP configurations (e.g., (uid={0})), "
+                        + "but optional for Active Directory (e.g., (&(objectClass=user)(userPrincipalName={0})))");
     }
 
+    /**
+     * Validates geOrchestra-specific LDAP extensions.
+     *
+     * @param name   the LDAP configuration name
+     * @param config the LDAP server configuration
+     * @param errors the validation error object
+     */
     private void validateGeorchestraExtensions(String name, Server config, Errors errors) {
         rejectIfEmptyOrWhitespace(errors, format("ldap.[%s].orgs.rdn", name), "",
-                "Organizations search base RDN is required if extended is true. e.g.: ou=orgs");
+                "Organizations search base RDN is required if 'extended' is true (e.g., ou=orgs)");
     }
 
+    /**
+     * Ensures that Active Directory configurations do not contain unused
+     * properties.
+     *
+     * @param name   the LDAP configuration name
+     * @param config the LDAP server configuration
+     * @param errors the validation error object
+     */
     private void validateActiveDirectory(String name, Server config, Errors errors) {
         warnUnusedByActiveDirectory(name, "orgs", config.getOrgs());
     }
 
+    /**
+     * Logs a warning if an Active Directory configuration contains an unused
+     * property.
+     *
+     * @param name     the LDAP configuration name
+     * @param property the property name
+     * @param value    the property value
+     */
     private void warnUnusedByActiveDirectory(String name, String property, Object value) {
         if (value != null) {
-            log.warn(
-                    "Found config property org.georchestra.gateway.security.ldap.{}.{} but it's not used by Active Directory",
-                    name, property);
+            log.warn("Found config property 'org.georchestra.gateway.security.ldap.{}.{}', "
+                    + "but it is not used by Active Directory configurations.", name, property);
         }
     }
 }

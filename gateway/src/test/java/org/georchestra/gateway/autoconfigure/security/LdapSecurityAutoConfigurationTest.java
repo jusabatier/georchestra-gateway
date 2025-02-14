@@ -10,20 +10,20 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
 
 package org.georchestra.gateway.autoconfigure.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties;
 import org.georchestra.gateway.security.ldap.LdapAuthenticationConfiguration;
 import org.georchestra.gateway.security.ldap.LdapAuthenticationConfiguration.LDAPAuthenticationCustomizer;
-import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;

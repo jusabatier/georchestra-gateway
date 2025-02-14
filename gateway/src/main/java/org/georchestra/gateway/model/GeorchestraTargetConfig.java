@@ -10,11 +10,11 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.georchestra.gateway.model;
 
@@ -29,24 +29,53 @@ import lombok.Generated;
 import lombok.experimental.Accessors;
 
 /**
- * The HTTP request headers and role-based access rules of a matched
- * {@link Route}
+ * Represents the security and HTTP request header settings for a matched
+ * {@link Route}.
+ * <p>
+ * This class defines role-based access rules and headers to be applied to
+ * proxied requests for a given route.
+ * </p>
  */
 @Data
 @Generated
 @Accessors(fluent = true, chain = true)
 public class GeorchestraTargetConfig {
 
+    /**
+     * Attribute key used to store the target configuration in the exchange.
+     */
     private static final String TARGET_CONFIG_KEY = GeorchestraTargetConfig.class.getCanonicalName() + ".target";
 
+    /**
+     * HTTP request headers to append when forwarding requests.
+     */
     private HeaderMappings headers;
+
+    /**
+     * Role-based access rules for controlling request authorization.
+     */
     private List<RoleBasedAccessRule> accessRules;
 
+    /**
+     * Retrieves the stored {@link GeorchestraTargetConfig} from the exchange, if
+     * available.
+     *
+     * @param exchange the {@link ServerWebExchange} containing the attributes
+     * @return an {@link Optional} containing the stored target configuration, or
+     *         empty if none exists
+     */
     public static Optional<GeorchestraTargetConfig> getTarget(ServerWebExchange exchange) {
         return Optional.ofNullable(exchange.getAttributes().get(TARGET_CONFIG_KEY))
                 .map(GeorchestraTargetConfig.class::cast);
     }
 
+    /**
+     * Stores a {@link GeorchestraTargetConfig} instance in the exchange attributes.
+     *
+     * @param exchange the {@link ServerWebExchange} where the configuration should
+     *                 be stored
+     * @param config   the {@link GeorchestraTargetConfig} instance to store
+     */
     public static void setTarget(ServerWebExchange exchange, GeorchestraTargetConfig config) {
         exchange.getAttributes().put(TARGET_CONFIG_KEY, config);
     }

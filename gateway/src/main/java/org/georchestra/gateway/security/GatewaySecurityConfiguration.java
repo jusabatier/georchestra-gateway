@@ -10,11 +10,11 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.georchestra.gateway.security;
 
@@ -41,16 +41,18 @@ import org.springframework.security.web.server.util.matcher.ServerWebExchangeMat
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * {@link Configuration} to initialize the Gateway's
- * {@link SecurityWebFilterChain} during application start up, such as
- * establishing path based access rules, configuring authentication providers,
- * etc.
+ * Configuration for the security settings in geOrchestra Gateway.
  * <p>
- * Note this configuration does very little by itself. Instead, it relies on
- * available beans implementing the {@link ServerHttpSecurityCustomizer}
- * extension point to tweak the {@link ServerHttpSecurity} as appropriate in a
- * decoupled way.
- * 
+ * This configuration initializes the {@link SecurityWebFilterChain}, handling
+ * authentication, authorization, and security policies.
+ * </p>
+ *
+ * <p>
+ * Instead of defining all security settings directly, this configuration relies
+ * on {@link ServerHttpSecurityCustomizer} implementations to allow decoupled
+ * and extensible security customization.
+ * </p>
+ *
  * @see ServerHttpSecurityCustomizer
  */
 @Configuration(proxyBeanMethods = false)
@@ -65,24 +67,26 @@ public class GatewaySecurityConfiguration {
     private @Value("${georchestra.gateway.logoutUrl:/?logout}") String georchestraLogoutUrl;
 
     /**
-     * Relies on available {@link ServerHttpSecurityCustomizer} extensions to
-     * configure the different aspects of the {@link ServerHttpSecurity} used to
-     * {@link ServerHttpSecurity#build build} the {@link SecurityWebFilterChain}.
+     * Configures security settings for the gateway using available customizers.
      * <p>
-     * Disables appending default response headers as far as the regular
-     * Spring-Security is concerned. This way, we let Spring Cloud Gateway control
-     * their behavior. Otherwise the config property
-     * {@literal spring.cloud.gateway.filter.secure-headers.disable: x-frame-options}
-     * has no effect.
+     * This method:
+     * <ul>
+     * <li>Disables CSRF protection (expected to be handled by proxied web
+     * apps).</li>
+     * <li>Disables default security response headers to allow Spring Cloud Gateway
+     * to manage them.</li>
+     * <li>Applies a custom access denied handler.</li>
+     * <li>Sets up form-based login handling.</li>
+     * <li>Applies all available {@link ServerHttpSecurityCustomizer} extensions in
+     * order.</li>
+     * <li>Configures logout handling, using an OIDC logout handler if
+     * available.</li>
+     * </ul>
+     * </p>
+     *
      * <p>
-     * Note also {@literal spring.cloud.gateway.default-filters} must contain the
-     * {@literal SecureHeaders} filter.
-     * <p>
-     * Finally, note
-     * {@literal spring.cloud.gateway.default-filters: x-frame-options} won't
-     * prevent downstream services so provide their own header.
-     * <p>
-     * The following are the default headers suppressed here:
+     * The following response headers are disabled by default:
+     * </p>
      * 
      * <pre>
      * <code>
@@ -95,6 +99,12 @@ public class GatewaySecurityConfiguration {
      * X-XSS-Protection: 1; mode=block
      * </code>
      * </pre>
+     *
+     * @param http        the {@link ServerHttpSecurity} instance
+     * @param customizers the list of available {@link ServerHttpSecurityCustomizer}
+     *                    implementations
+     * @return the configured {@link SecurityWebFilterChain}
+     * @throws Exception if an error occurs during configuration
      */
     @Bean
     SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
@@ -102,14 +112,8 @@ public class GatewaySecurityConfiguration {
 
         log.info("Initializing security filter chain...");
 
-        // disable CSRF protection, considering it will be managed
-        // by proxified webapps, not the gateway.
         http.csrf().disable();
-
-        // disable default response headers. See comment in the method's javadoc
         http.headers().disable();
-
-        // custom handling for forbidden error
         http.exceptionHandling().accessDeniedHandler(new CustomAccessDeniedHandler());
 
         http.formLogin()
@@ -126,31 +130,58 @@ public class GatewaySecurityConfiguration {
         RedirectServerLogoutSuccessHandler defaultRedirect = new RedirectServerLogoutSuccessHandler();
         defaultRedirect.setLogoutSuccessUrl(URI.create(georchestraLogoutUrl));
 
-        LogoutSpec logoutUrl = http.formLogin().loginPage("/login").and().logout()
+        LogoutSpec logoutSpec = http.formLogin().loginPage("/login").and().logout()
                 .requiresLogout(ServerWebExchangeMatchers.pathMatchers(HttpMethod.GET, "/logout"))
                 .logoutSuccessHandler(oidcLogoutSuccessHandler != null ? oidcLogoutSuccessHandler : defaultRedirect);
 
-        return logoutUrl.and().build();
+        return logoutSpec.and().build();
     }
 
+    /**
+     * Sorts and returns the list of custom security configurations.
+     *
+     * @param customizers the list of security customizers
+     * @return a sorted stream of {@link ServerHttpSecurityCustomizer} instances
+     */
     private Stream<ServerHttpSecurityCustomizer> sortedCustomizers(List<ServerHttpSecurityCustomizer> customizers) {
         return customizers.stream().sorted((c1, c2) -> Integer.compare(c1.getOrder(), c2.getOrder()));
     }
 
+    /**
+     * Creates a {@link GeorchestraUserMapper} to resolve user identities using the
+     * configured resolvers and customizers.
+     *
+     * @param resolvers   the list of user resolvers
+     * @param customizers the list of user customizers
+     * @return an instance of {@link GeorchestraUserMapper}
+     */
     @Bean
     GeorchestraUserMapper georchestraUserResolver(List<GeorchestraUserMapperExtension> resolvers,
             List<GeorchestraUserCustomizerExtension> customizers) {
         return new GeorchestraUserMapper(resolvers, customizers);
     }
 
+    /**
+     * Creates a global filter that resolves authenticated geOrchestra users in the
+     * request lifecycle.
+     *
+     * @param resolver the {@link GeorchestraUserMapper} used to resolve users
+     * @return an instance of {@link ResolveGeorchestraUserGlobalFilter}
+     */
     @Bean
     ResolveGeorchestraUserGlobalFilter resolveGeorchestraUserGlobalFilter(GeorchestraUserMapper resolver) {
         return new ResolveGeorchestraUserGlobalFilter(resolver);
     }
 
     /**
-     * Extension to make {@link GeorchestraUserMapper} append user roles based on
-     * {@link GatewayConfigProperties#getRolesMappings()}
+     * Registers a custom user role mapping extension.
+     * <p>
+     * This extension updates user roles based on the configured mappings in
+     * {@link GatewayConfigProperties#getRolesMappings()}.
+     * </p>
+     *
+     * @param config the gateway configuration properties
+     * @return an instance of {@link RolesMappingsUserCustomizer}
      */
     @Bean
     RolesMappingsUserCustomizer rolesMappingsUserCustomizer(GatewayConfigProperties config) {
@@ -158,5 +189,4 @@ public class GatewaySecurityConfiguration {
         log.info("Creating {}", RolesMappingsUserCustomizer.class.getSimpleName());
         return new RolesMappingsUserCustomizer(rolesMappings);
     }
-
 }

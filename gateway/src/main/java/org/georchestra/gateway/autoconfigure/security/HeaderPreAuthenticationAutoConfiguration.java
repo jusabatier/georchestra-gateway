@@ -10,11 +10,11 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.georchestra.gateway.autoconfigure.security;
 
@@ -23,13 +23,18 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 /**
- * {@link AutoConfiguration @AutoConfiguration} to enable request headers
- * pre-authentication.
+ * Auto-configuration for request headers pre-authentication.
  * <p>
- * This feature shall be enabled through the
- * {@code georchestra.gateway.security.header-authentication.enabled=true}
- * config property.
- * 
+ * This configuration enables header-based pre-authentication when the
+ * {@code georchestra.gateway.security.header-authentication.enabled} property
+ * is set to {@code true}.
+ * </p>
+ *
+ * <p>
+ * It imports {@link HeaderPreAuthenticationConfiguration}, which provides the
+ * necessary beans for handling pre-authentication via request headers.
+ * </p>
+ *
  * @see ConditionalOnHeaderPreAuthentication
  * @see HeaderPreAuthenticationConfiguration
  */

@@ -10,83 +10,116 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.georchestra.gateway.security;
 
 import java.util.List;
 import java.util.Optional;
 
-import org.georchestra.ds.users.DuplicatedEmailException;
-import org.georchestra.gateway.model.GeorchestraUsers;
 import org.georchestra.gateway.security.exceptions.DuplicatedEmailFoundException;
 import org.georchestra.security.model.GeorchestraUser;
-import org.springframework.core.Ordered;
 import org.springframework.security.core.Authentication;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Aids {@link ResolveGeorchestraUserGlobalFilter} in resolving the
- * {@link GeorchestraUser} from the current request's {@link Authentication}
- * token.
+ * Resolves a {@link GeorchestraUser} from an {@link Authentication} token by
+ * delegating to available {@link GeorchestraUserMapperExtension}
+ * implementations.
  * <p>
- * Relies on the provided {@link GeorchestraUserMapperExtension}s to map an
- * {@link Authentication} to a {@link GeorchestraUsers}, and on
- * {@link GeorchestraUserCustomizerExtension} to apply additional user
- * customizations once resolved from {@link Authentication} to
- * {@link GeorchestraUser}.
+ * This class acts as an abstraction layer that allows multiple authentication
+ * strategies to provide user resolution mechanisms, such as LDAP, OAuth2, or
+ * custom authentication providers.
+ * </p>
  * <p>
- * {@literal GeorchestraUserMapperExtension} beans specialize in mapping auth
- * tokens for specific authentication sources (e.g. LDAP, OAuth2, OAuth2+OpenID,
- * etc).
+ * Once a user is successfully resolved, any registered
+ * {@link GeorchestraUserCustomizerExtension} implementations are applied in
+ * order to modify or enrich the user attributes.
+ * </p>
  * <p>
- * {@literal GeorchestraUserCustomizerExtension} beans specialize in applying
- * any additional customization to the {@link GeorchestraUser} object after it
- * has been extracted from the {@link Authentication} created by the actual
- * authentication provider.
+ * This component is primarily used by
+ * {@link ResolveGeorchestraUserGlobalFilter} to extract user details from
+ * authentication tokens in the request lifecycle.
+ * </p>
  * 
  * @see GeorchestraUserMapperExtension
  * @see GeorchestraUserCustomizerExtension
+ * @see ResolveGeorchestraUserGlobalFilter
  */
 @RequiredArgsConstructor
 public class GeorchestraUserMapper {
 
     /**
-     * {@link Ordered ordered} list of user mapper extensions.
+     * Ordered list of user mapper extensions responsible for resolving a
+     * {@link GeorchestraUser} from an {@link Authentication} token.
      */
     private final @NonNull List<GeorchestraUserMapperExtension> resolvers;
 
+    /**
+     * Ordered list of user customizer extensions that apply modifications to a
+     * resolved {@link GeorchestraUser}.
+     */
     private final @NonNull List<GeorchestraUserCustomizerExtension> customizers;
 
+    /**
+     * Default constructor for use when no resolvers or customizers are provided.
+     */
     GeorchestraUserMapper() {
         this(List.of(), List.of());
     }
 
+    /**
+     * Constructor for initializing only with user resolvers.
+     * 
+     * @param resolvers the list of {@link GeorchestraUserMapperExtension} instances
+     */
     GeorchestraUserMapper(List<GeorchestraUserMapperExtension> resolvers) {
         this(resolvers, List.of());
     }
 
     /**
-     * @return the first non-empty user from
-     *         {@link GeorchestraUserMapperExtension#resolve asking} the extension
-     *         point implementations to resolve the user from the token, or
-     *         {@link Optional#empty()} if no extension point implementation can
-     *         handle the auth token.
+     * Attempts to resolve a {@link GeorchestraUser} from the provided
+     * authentication token.
+     * <p>
+     * Each {@link GeorchestraUserMapperExtension} is queried in order until one
+     * successfully resolves a user. If no extension handles the authentication
+     * token, an empty result is returned.
+     * </p>
+     * <p>
+     * If a user is resolved, it is then processed through all registered
+     * {@link GeorchestraUserCustomizerExtension} instances in order.
+     * </p>
+     * 
+     * @param authToken the authentication token to resolve
+     * @return an optional {@link GeorchestraUser} if resolution is successful
+     * @throws DuplicatedEmailFoundException if multiple users with the same email
+     *                                       are found
      */
     public Optional<GeorchestraUser> resolve(@NonNull Authentication authToken) throws DuplicatedEmailFoundException {
-        return resolvers.stream()//
-                .map(resolver -> resolver.resolve(authToken))//
-                .filter(Optional::isPresent)//
-                .map(Optional::orElseThrow)//
-                .map(mapped -> customize(authToken, mapped)).findFirst();
+        return resolvers.stream().map(resolver -> resolver.resolve(authToken)).filter(Optional::isPresent)
+                .map(Optional::orElseThrow).map(mapped -> customize(authToken, mapped)).findFirst();
     }
 
+    /**
+     * Applies registered {@link GeorchestraUserCustomizerExtension} instances to
+     * the resolved user.
+     * <p>
+     * This allows for modifications such as role mappings, attribute enrichment, or
+     * other custom transformations based on the authentication context.
+     * </p>
+     * 
+     * @param authToken the authentication token associated with the user
+     * @param mapped    the resolved {@link GeorchestraUser} instance
+     * @return the customized {@link GeorchestraUser} after all modifications are
+     *         applied
+     * @throws DuplicatedEmailFoundException if an issue occurs during customization
+     */
     private GeorchestraUser customize(@NonNull Authentication authToken, GeorchestraUser mapped)
             throws DuplicatedEmailFoundException {
         GeorchestraUser customized = mapped;

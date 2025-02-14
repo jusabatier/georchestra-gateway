@@ -10,11 +10,11 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.georchestra.gateway.filter.headers.providers;
 
@@ -29,19 +29,36 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Contributes the {@literal sec-proxy: true} request header based on the value
- * returned by the provided {@link BooleanSupplier}, which is required by all
- * backend services as a flag indicating the request is authenticated.
+ * {@link HeaderContributor} that appends the {@code sec-proxy: true} request
+ * header to indicate that the request is authenticated through the gateway.
+ * <p>
+ * This header is required by all backend services to differentiate between
+ * authenticated and unauthenticated requests.
+ * </p>
+ * <p>
+ * The contribution of this header is controlled by a {@link BooleanSupplier},
+ * allowing dynamic enablement based on external conditions.
+ * </p>
+ *
+ * @see HeaderContributor
  */
 @RequiredArgsConstructor
 public class SecProxyHeaderContributor extends HeaderContributor {
 
     private final @NonNull BooleanSupplier secProxyHeaderEnabled;
 
+    /**
+     * Prepares a header contributor that appends the {@code sec-proxy} header if
+     * enabled.
+     *
+     * @param exchange the current {@link ServerWebExchange}
+     * @return a {@link Consumer} that modifies the request headers
+     */
     public @Override Consumer<HttpHeaders> prepare(ServerWebExchange exchange) {
         return headers -> {
-            if (secProxyHeaderEnabled.getAsBoolean())
+            if (secProxyHeaderEnabled.getAsBoolean()) {
                 add(headers, "sec-proxy", "true");
+            }
         };
     }
 }

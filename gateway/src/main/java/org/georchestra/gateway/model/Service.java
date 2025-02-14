@@ -10,11 +10,11 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.georchestra.gateway.model;
 
@@ -26,31 +26,47 @@ import lombok.Data;
 import lombok.Generated;
 
 /**
- * Model object used to configure which authenticated user's roles can reach a
- * given backend service URIs, and which HTTP request headers to append to the
- * proxied requests.
- *
+ * Represents the configuration of a backend service within the geOrchestra
+ * Gateway.
+ * <p>
+ * This model defines the target service URL, role-based access rules, and
+ * security headers to be applied to proxied requests.
+ * </p>
  */
 @Data
 @Generated
 public class Service {
+
     /**
-     * Back end service URL the Gateway will use to proxy incoming requests to,
-     * based on the {@link #getAccessRules() access rules}
-     * {@link RoleBasedAccessRule#getInterceptUrl() intercept-URLs}
+     * The backend service URL to which the gateway will proxy incoming requests.
+     * <p>
+     * The routing is determined based on the {@link #getAccessRules() access rules}
+     * and their associated {@link RoleBasedAccessRule#getInterceptUrl()
+     * intercept-URLs}.
+     * </p>
      */
     private URI target;
 
     /**
-     * Service-specific security headers configuration
+     * Service-specific security headers configuration.
+     * <p>
+     * These headers will be appended to requests forwarded to the backend service.
+     * </p>
      */
     private HeaderMappings headers;
 
     /**
-     * List of Ant-pattern based access rules for the given back-end service
+     * List of Ant-pattern based access rules for controlling access to the backend
+     * service.
      */
     private List<RoleBasedAccessRule> accessRules = List.of();
 
+    /**
+     * Retrieves the optional security headers configuration for this service.
+     *
+     * @return an {@link Optional} containing the {@link HeaderMappings}, or empty
+     *         if not defined
+     */
     public Optional<HeaderMappings> headers() {
         return Optional.ofNullable(headers);
     }

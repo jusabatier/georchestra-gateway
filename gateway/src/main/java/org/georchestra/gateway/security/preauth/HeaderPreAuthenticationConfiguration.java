@@ -10,11 +10,11 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.georchestra.gateway.security.preauth;
 
@@ -26,48 +26,88 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 
 /**
- * {@link Configuration @Configuration} to enable request headers
- * pre-authentication.
+ * Configuration class for enabling request-header-based pre-authentication.
  * <p>
+ * This setup allows authentication to be performed via HTTP request headers,
+ * typically injected by a trusted reverse proxy or identity provider.
+ * Authentication is only considered valid if the
+ * {@code sec-georchestra-preauthenticated} header is present and set to
+ * {@code true}.
+ * </p>
+ *
+ * <h3>Authentication Flow:</h3>
  * <ul>
- * <li>{@link PreauthGatewaySecurityCustomizer} performs authentication based on
- * incoming {@literal preauth-*} headers and produces a
- * {@link PreAuthenticatedAuthenticationToken}, provided the
- * {@code sec-georchestra-preauthenticated} header has a value of {@code true}.
- * This is intended to be sent by a reverse proxy, prior sanitization of
- * {@code sec-*} headers from client requests to avoid fraudulent requests.
+ * <li>{@link PreauthGatewaySecurityCustomizer}:
+ * <ul>
+ * <li>Intercepts incoming requests and extracts pre-authentication
+ * headers.</li>
+ * <li>Creates a {@link PreAuthenticatedAuthenticationToken} if authentication
+ * is valid.</li>
+ * <li>Ensures that client requests cannot tamper with {@code sec-*}
+ * headers.</li>
+ * </ul>
+ * </li>
+ * <li>{@link PreauthenticatedUserMapperExtension}:
+ * <ul>
+ * <li>Maps a {@link PreAuthenticatedAuthenticationToken} to a
+ * {@link GeorchestraUser}.</li>
+ * <li>Used by {@link GeorchestraUserMapper} when resolving authentication.</li>
+ * </ul>
+ * </li>
+ * </ul>
+ *
+ * <h3>Expected Headers:</h3> The following HTTP headers can be used for
+ * authentication:
+ * <ul>
+ * <li>{@code preauth-username} - Username of the authenticated user.</li>
+ * <li>{@code preauth-firstname} - User's first name.</li>
+ * <li>{@code preauth-lastname} - User's last name.</li>
+ * <li>{@code preauth-org} - Organization name.</li>
+ * <li>{@code preauth-email} - Email address of the user.</li>
+ * <li>{@code preauth-roles} - (Optional) Comma-separated list of user
+ * roles.</li>
+ * </ul>
  * <p>
- * The following request headers are parsed:
- * <ul>
- * <li>{@literal preauth-username}
- * <li>{@literal preauth-firstname}
- * <li>{@literal preauth-lastname}
- * <li>{@literal preauth-org}
- * <li>{@literal preauth-email}
- * <li>{@literal preauth-roles}
- * </ul>
- * NOTE {@literal preauth-roles} is NOT mandatory, and the pre-authenticated
- * user will only have the {@literal ROLE_USER} role when {@code preauth-roles}
- * is not provided.
- * <li>{@link PreauthenticatedUserMapperExtension} maps the
- * {@link PreAuthenticatedAuthenticationToken} to a {@link GeorchestraUser} when
- * {@link GeorchestraUserMapper#resolve(org.springframework.security.core.Authentication)
- * GeorchestraUserMapper.resolve(Authentication)} requests it.
- * </ul>
+ * <b>Note:</b> If {@code preauth-roles} is not provided, the user will only be
+ * assigned the default role {@code ROLE_USER}.
+ * </p>
+ *
+ * <h3>Example Configuration:</h3>
  * 
+ * <pre>
+ * {@code
+ * georchestra:
+ *   gateway:
+ *     security:
+ *       header-authentication:
+ *         enabled: true
+ * }
+ * </pre>
  */
 @Configuration
 @EnableConfigurationProperties(HeaderPreauthConfigProperties.class)
 public class HeaderPreAuthenticationConfiguration {
 
+    /**
+     * Registers a security customizer that enables authentication based on
+     * pre-authentication headers.
+     *
+     * @return a {@link PreauthGatewaySecurityCustomizer} bean
+     */
     @Bean
     PreauthGatewaySecurityCustomizer preauthGatewaySecurityCustomizer() {
         return new PreauthGatewaySecurityCustomizer();
     }
 
+    /**
+     * Registers a mapper that converts a
+     * {@link PreAuthenticatedAuthenticationToken} into a {@link GeorchestraUser}
+     * instance.
+     *
+     * @return a {@link PreauthenticatedUserMapperExtension} bean
+     */
     @Bean
     PreauthenticatedUserMapperExtension preauthenticatedUserMapperExtension() {
         return new PreauthenticatedUserMapperExtension();
     }
-
 }

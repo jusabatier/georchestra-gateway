@@ -10,11 +10,11 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.georchestra.gateway.model;
 
@@ -28,33 +28,39 @@ import lombok.Data;
 import lombok.Generated;
 
 /**
- * Model object representing the externalized configuration properties used to
- * set up URI based access rules and HTTP request headers appended to proxied
- * requests to back-end services.
- *
+ * Configuration properties for the geOrchestra Gateway.
+ * <p>
+ * This model object represents the externalized configuration used to define
+ * URI-based access rules and HTTP request headers appended to proxied requests
+ * to back-end services.
+ * </p>
  */
 @Data
 @Generated
 @ConfigurationProperties("georchestra.gateway")
 public class GatewayConfigProperties {
 
+    /**
+     * Role mappings that define additional roles granted to users based on their
+     * existing roles.
+     */
     private Map<String, List<String>> rolesMappings = Map.of();
 
     /**
-     * Configures the global security headers to append to all proxied http requests
+     * Default security headers to append to all proxied HTTP requests.
      */
     private HeaderMappings defaultHeaders = new HeaderMappings();
 
     /**
-     * Incoming request URI pattern matching for requests that don't match any of
-     * the service-specific rules under
-     * {@literal georchestra.gateway.services.[service].access-rules}
+     * Global access rules that apply to requests that do not match any
+     * service-specific rules under
+     * {@code georchestra.gateway.services.[service].access-rules}.
      */
     private List<RoleBasedAccessRule> globalAccessRules = List.of();
 
     /**
-     * Maps a logical service name to its back-end service URL and security settings
+     * Maps logical service names to their corresponding back-end service URLs and
+     * security settings.
      */
     private Map<String, Service> services = Collections.emptyMap();
-
 }

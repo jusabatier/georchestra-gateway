@@ -10,13 +10,15 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.georchestra.gateway.accounts.admin.ldap;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.georchestra.ds.orgs.OrgsDao;
 import org.georchestra.ds.users.AccountDao;
@@ -25,14 +27,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.annotation.UserConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class GeorchestraLdapAccessConfigurationTest {
 
     private ApplicationContextRunner runner = new ApplicationContextRunner().withConfiguration(UserConfigurations
             .of(GeorchestraLdapAccountManagementConfiguration.class, ExtendedLdapAuthenticationConfiguration.class));
 
-    public @Test void accountsAndRolesDaoRelatedBeansAreAvailable() {
+    @Test
+    void accountsAndRolesDaoRelatedBeansAreAvailable() {
         runner.withPropertyValues(""//
         // Georchestra extended LDAP default config
                 , "georchestra.gateway.security.ldap.default.enabled: true" //
@@ -53,7 +54,8 @@ public class GeorchestraLdapAccessConfigurationTest {
         });
     }
 
-    public @Test void contextShouldFailIfCreateNonExistingTrueButNoDefaultExtendedLdap() {
+    @Test
+    void contextShouldFailIfCreateNonExistingTrueButNoDefaultExtendedLdap() {
         runner.withPropertyValues(""//
                 , "georchestra.gateway.security.ldap.default.enabled: false" //
                 , "georchestra.gateway.security.create-non-existing-users-in-l-d-a-p: true" //

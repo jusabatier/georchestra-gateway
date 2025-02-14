@@ -10,16 +10,14 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.georchestra.gateway.security.ldap.extended;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -37,55 +35,96 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Demultiplexer to call the appropriate {@link UsersApi} based on the
- * authentication's service name, as provided by
- * {@link GeorchestraUserNamePasswordAuthenticationToken#getConfigName()},
- * matching a configured LDAP database through the configuration properties
- * {@code georchestra.gateway.security.<serviceName>.*}.
+ * A service responsible for selecting the appropriate {@link UsersApi} based on
+ * the authentication's originating LDAP configuration, ensuring user lookups
+ * occur in the correct LDAP database.
  * <p>
- * Ensures {@link GeorchestraLdapAuthenticatedUserMapper} queries the same LDAP
- * database the authentication object was created from, avoiding the need to
- * disambiguate if two configured LDAP databases have accounts with the same
- * {@literal username}.
+ * This class provides methods to:
+ * <ul>
+ * <li>Retrieve user details based on username, ensuring queries are made to the
+ * LDAP service where authentication originated.</li>
+ * <li>Resolve the user's organization information using the corresponding
+ * {@link OrganizationsApi}.</li>
+ * <li>Handle OAuth2-based user identification.</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * The mapping between LDAP configuration names and their corresponding APIs is
+ * established through configuration properties following the pattern:
+ * {@code georchestra.gateway.security.<serviceName>.*}.
+ * </p>
+ *
+ * Example usage:
+ * 
+ * <pre>
+ * {
+ *     &#64;code
+ *     Optional<ExtendedGeorchestraUser> user = demultiplexer.findByUsername("ldap-service-1", "jdoe");
+ * }
+ * </pre>
+ *
+ * @see GeorchestraUser
+ * @see ExtendedGeorchestraUser
+ * @see UsersApi
+ * @see OrganizationsApi
  */
 @RequiredArgsConstructor
 public class DemultiplexingUsersApi {
 
+    /**
+     * Mapping between service names and their corresponding {@link UsersApi}
+     * instances.
+     */
     private final @NonNull Map<String, UsersApi> usersByConfigName;
+
+    /**
+     * Mapping between service names and their corresponding
+     * {@link OrganizationsApi} instances.
+     */
     private final @NonNull Map<String, OrganizationsApi> orgsByConfigName;
 
+    /**
+     * Retrieves the set of configured service names.
+     *
+     * @return a set containing all registered LDAP service names.
+     */
     public @VisibleForTesting Set<String> getTargetNames() {
         return new HashSet<>(usersByConfigName.keySet());
     }
 
     /**
+     * Finds a user by username within a specific LDAP service.
      *
-     * @param serviceName the configured LDAP service name, as from the
-     *                    configuration properties
-     *                    {@code georchestra.gateway.security.<serviceName>}
-     * @param username    the user name to query the service's {@link UsersApi} with
-     *
-     * @return the {@link GeorchestraUser} returned by the service's
-     *         {@link UsersApi}, or {@link Optional#empty() empty} if not found
+     * @param serviceName the LDAP service configuration name.
+     * @param username    the username to search for.
+     * @return an {@link Optional} containing the {@link ExtendedGeorchestraUser},
+     *         or empty if the user is not found.
+     * @throws NullPointerException if no {@link UsersApi} is registered for the
+     *                              given service.
      */
     public Optional<ExtendedGeorchestraUser> findByUsername(@NonNull String serviceName, @NonNull String username) {
-        UsersApi usersApi = usersByConfigName.get(serviceName);
-        Objects.requireNonNull(usersApi, () -> "No UsersApi found for config named " + serviceName);
-        Optional<GeorchestraUser> user = usersApi.findByUsername(username);
+        UsersApi usersApi = Objects.requireNonNull(usersByConfigName.get(serviceName),
+                () -> "No UsersApi found for config named " + serviceName);
 
-        return extend(serviceName, user);
+        Optional<GeorchestraUser> user = usersApi.findByUsername(username);
+        return extendUserWithOrganization(serviceName, user);
     }
 
+    /**
+     * Finds a user by username in the first registered LDAP service.
+     * <p>
+     * This method is useful when only one LDAP service is expected, but may not be
+     * reliable when multiple LDAP configurations exist.
+     * </p>
+     *
+     * @param username the username to search for.
+     * @return an {@link Optional} containing the {@link ExtendedGeorchestraUser},
+     *         or empty if the user is not found.
+     */
     public Optional<ExtendedGeorchestraUser> findByUsername(@NonNull String username) {
-        // TODO: iterates over every possible geOrchestra LDAP being registered ?
-        // I would expect to have generally only one geOrchestra (extended) LDAP
-        // configured,
-        // so the first extended LDAP should do.
-        String serviceName = usersByConfigName.keySet().stream().findFirst().get();
-        UsersApi usersApi = usersByConfigName.get(serviceName);
-        Optional<GeorchestraUser> user = usersApi.findByUsername(username);
-
-        return extend(serviceName, user);
+        return usersByConfigName.keySet().stream().findFirst()
+                .flatMap(serviceName -> findByUsername(serviceName, username));
     }
 
     public Optional<ExtendedGeorchestraUser> findByEmail(@NonNull String serviceName, @NonNull String email) {
@@ -93,7 +132,7 @@ public class DemultiplexingUsersApi {
         Objects.requireNonNull(usersApi, () -> "No UsersApi found for config named " + serviceName);
         Optional<GeorchestraUser> user = usersApi.findByEmail(email);
 
-        return extend(serviceName, user);
+        return extendUserWithOrganization(serviceName, user);
     }
 
     public Optional<ExtendedGeorchestraUser> findByEmail(@NonNull String email) {
@@ -101,26 +140,53 @@ public class DemultiplexingUsersApi {
         UsersApi usersApi = usersByConfigName.get(serviceName);
         Optional<GeorchestraUser> user = usersApi.findByEmail(email);
 
-        return extend(serviceName, user);
+        return extendUserWithOrganization(serviceName, user);
     }
 
+    /**
+     * Finds a user by their OAuth2 provider and unique identifier.
+     * <p>
+     * This method attempts to match an OAuth2-authenticated user within the first
+     * registered LDAP service.
+     * </p>
+     *
+     * @param oauth2Provider the OAuth2 provider name (e.g., "google", "github").
+     * @param oauth2Uid      the unique identifier for the user within the OAuth2
+     *                       provider.
+     * @return an {@link Optional} containing the {@link ExtendedGeorchestraUser},
+     *         or empty if the user is not found.
+     * @throws NullPointerException if no {@link UsersApi} is registered for the
+     *                              selected service.
+     */
     public Optional<ExtendedGeorchestraUser> findByOAuth2Uid(@NonNull String oauth2Provider,
             @NonNull String oauth2Uid) {
-        String serviceName = usersByConfigName.keySet().stream().findFirst().get();
-        UsersApi usersApi = usersByConfigName.get(serviceName);
-        Objects.requireNonNull(usersApi, () -> "No UsersApi found for config named " + serviceName);
-        Optional<GeorchestraUser> user = usersApi.findByOAuth2Uid(oauth2Provider, oauth2Uid);
+        return usersByConfigName.keySet().stream().findFirst().flatMap(serviceName -> {
+            UsersApi usersApi = Objects.requireNonNull(usersByConfigName.get(serviceName),
+                    () -> "No UsersApi found for config named " + serviceName);
 
-        return extend(serviceName, user);
+            Optional<GeorchestraUser> user = usersApi.findByOAuth2Uid(oauth2Provider, oauth2Uid);
+            return extendUserWithOrganization(serviceName, user);
+        });
     }
 
-    private Optional<ExtendedGeorchestraUser> extend(String serviceName, Optional<GeorchestraUser> user) {
-        OrganizationsApi orgsApi = orgsByConfigName.get(serviceName);
-        Objects.requireNonNull(orgsApi, () -> "No OrganizationsApi found for config named " + serviceName);
+    /**
+     * Extends a {@link GeorchestraUser} by attaching its corresponding organization
+     * details.
+     *
+     * @param serviceName the LDAP service configuration name.
+     * @param user        the resolved user, if present.
+     * @return an {@link Optional} containing the {@link ExtendedGeorchestraUser}
+     *         with organization details.
+     * @throws NullPointerException if no {@link OrganizationsApi} is registered for
+     *                              the given service.
+     */
+    private Optional<ExtendedGeorchestraUser> extendUserWithOrganization(String serviceName,
+            Optional<GeorchestraUser> user) {
+        OrganizationsApi orgsApi = Objects.requireNonNull(orgsByConfigName.get(serviceName),
+                () -> "No OrganizationsApi found for config named " + serviceName);
 
         Organization org = user.map(GeorchestraUser::getOrganization).flatMap(orgsApi::findByShortName).orElse(null);
 
         return user.map(ExtendedGeorchestraUser::new).map(u -> u.setOrg(org));
     }
-
 }

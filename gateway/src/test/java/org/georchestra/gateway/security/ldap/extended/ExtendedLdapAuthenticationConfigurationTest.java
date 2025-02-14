@@ -10,11 +10,11 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
 
 package org.georchestra.gateway.security.ldap.extended;
@@ -39,7 +39,8 @@ class ExtendedLdapAuthenticationConfigurationTest {
             .withConfiguration(UserConfigurations.of(ExtendedLdapAuthenticationConfiguration.class));
 
     @SuppressWarnings("unchecked")
-    public @Test void contextContributions_empty_config() {
+    @Test
+    void contextContributions_empty_config() {
         runner.run(context -> {
             assertThat(context).hasNotFailed();
             assertThat(context).getBean("enabledExtendedLdapConfigs").isInstanceOf(List.class);
@@ -54,7 +55,8 @@ class ExtendedLdapAuthenticationConfigurationTest {
     }
 
     @SuppressWarnings("unchecked")
-    public @Test void contextContributions_single_config() {
+    @Test
+    void contextContributions_single_config() {
         runner.withPropertyValues(""//
                 , "georchestra.gateway.security.ldap.ldap1.enabled: true" //
                 , "georchestra.gateway.security.ldap.ldap1.extended: true" //
@@ -82,7 +84,8 @@ class ExtendedLdapAuthenticationConfigurationTest {
     }
 
     @SuppressWarnings("unchecked")
-    public @Test void contextContributions_multiple_configs() {
+    @Test
+    void contextContributions_multiple_configs() {
         runner.withPropertyValues(""//
                 , "georchestra.gateway.security.ldap.ldap1.enabled: true" //
                 , "georchestra.gateway.security.ldap.ldap1.extended: true" //

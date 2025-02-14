@@ -10,11 +10,11 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.georchestra.gateway.autoconfigure.accounts;
 
@@ -26,17 +26,33 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Import;
 
 /**
- * {@link AutoConfiguration @AutoConfiguration} to enable sending events over
- * rabbitmq when it is enabled through
- * {@literal georchestra.gateway.security.events.rabbitmq = true}.
+ * Auto-configuration for enabling RabbitMQ event dispatching when configured.
  * <p>
- * When an account is created in geOrchestra's LDAP in response to a
- * pre-authenticated or OIDC successful authentication, an
- * {@link AccountCreated} event will be catch up and sent over the wire.
- * 
- * 
+ * This configuration enables RabbitMQ integration when the following conditions
+ * are met:
+ * <ul>
+ * <li>LDAP account creation is enabled
+ * ({@link ConditionalOnCreateLdapAccounts}).</li>
+ * <li>The property {@code georchestra.gateway.security.events.rabbitmq} is set
+ * to {@code true}.</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * When a user account is created in geOrchestra's LDAP following a successful
+ * authentication via pre-authenticated headers or OIDC, an
+ * {@link AccountCreated} event is published. This event is then transmitted via
+ * RabbitMQ.
+ * </p>
+ *
+ * <p>
+ * This class imports {@link RabbitmqEventsConfiguration}, which defines the
+ * RabbitMQ message sender and event handling beans.
+ * </p>
+ *
  * @see ConditionalOnCreateLdapAccounts
  * @see RabbitmqEventsConfiguration
+ * @see RabbitmqEventsConfigurationProperties
  */
 @AutoConfiguration
 @ConditionalOnCreateLdapAccounts

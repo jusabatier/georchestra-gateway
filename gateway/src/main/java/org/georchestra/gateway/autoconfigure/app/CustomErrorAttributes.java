@@ -10,11 +10,11 @@
  *
  * geOrchestra is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along with
- * geOrchestra.  If not, see <http://www.gnu.org/licenses/>.
+ * geOrchestra. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.georchestra.gateway.autoconfigure.app;
 
@@ -25,34 +25,78 @@ import java.util.Map;
 import org.springframework.boot.autoconfigure.web.reactive.error.ErrorWebFluxAutoConfiguration;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.web.reactive.error.DefaultErrorAttributes;
-import org.springframework.boot.web.reactive.error.ErrorAttributes;
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.reactive.function.server.ServerRequest;
 
 /**
- * Maps connection exceptions to HTTP 503 status code instead of 500
+ * Custom error attributes that remap specific exceptions to appropriate HTTP
+ * status codes.
  * <p>
- * In the event that a route exists and the downstream service is not available,
- * usually the Gateway returns a 503 status code as expected.
+ * This class extends {@link DefaultErrorAttributes} to modify error responses
+ * in a Spring WebFlux application. It ensures that:
+ * <ul>
+ * <li>{@link UnknownHostException} and {@link ConnectException} return an HTTP
+ * 503 ({@link HttpStatus#SERVICE_UNAVAILABLE}) instead of the default HTTP
+ * 500.</li>
+ * <li>{@link AccessDeniedException} results in an HTTP 403
+ * ({@link HttpStatus#FORBIDDEN}).</li>
+ * </ul>
+ * </p>
+ *
  * <p>
- * On a dynamic environment though, such as k8s and docker compose, the
- * underlying error results from a DNS lookup failure, and the default error is
- * 500 instead.
+ * In dynamic environments like Kubernetes and Docker Compose, service
+ * unavailability may manifest as DNS resolution failures, which would normally
+ * result in HTTP 500. This class ensures that such failures correctly return
+ * HTTP 503.
+ * </p>
+ *
  * <p>
- * This {@link ErrorAttributes} overrides the {@link DefaultErrorAttributes}
- * configured in {@link ErrorWebFluxAutoConfiguration} and injected to the
- * {@link ErrorWebExceptionHandler}, and translates
- * {@link java.net.UnknownHostException} and {@link java.net.ConnectException}
- * to {@link HttpStatus#SERVICE_UNAVAILABLE}
+ * This class is injected into the {@link ErrorWebExceptionHandler} and replaces
+ * the default error handling provided by {@link ErrorWebFluxAutoConfiguration}.
+ * </p>
+ *
+ * @see DefaultErrorAttributes
+ * @see ErrorWebFluxAutoConfiguration
+ * @see ErrorWebExceptionHandler
  */
 public class CustomErrorAttributes extends DefaultErrorAttributes {
 
+    /**
+     * Overrides the default error attributes to remap specific exceptions to
+     * appropriate HTTP status codes.
+     * <p>
+     * This method retrieves the original error attributes and modifies the status
+     * code for the following exceptions:
+     * <ul>
+     * <li>{@link UnknownHostException} and {@link ConnectException} → HTTP 503
+     * (Service Unavailable)</li>
+     * <li>{@link AccessDeniedException} → HTTP 403 (Forbidden)</li>
+     * </ul>
+     * </p>
+     *
+     * <p>
+     * <b>Example Modified Response:</b>
+     * </p>
+     * 
+     * <pre>
+     * {
+     *   "status": 503,
+     *   "error": "Service Unavailable",
+     *   "message": "Upstream service unavailable"
+     * }
+     * </pre>
+     *
+     * @param request the server request that caused the error
+     * @param options options for error attribute filtering
+     * @return a modified map of error attributes with updated status codes
+     */
     @Override
     public Map<String, Object> getErrorAttributes(ServerRequest request, ErrorAttributeOptions options) {
         Map<String, Object> attributes = super.getErrorAttributes(request, options);
         Throwable error = super.getError(request);
+
         if (error instanceof UnknownHostException || error instanceof ConnectException) {
             attributes.put("status", HttpStatus.SERVICE_UNAVAILABLE.value());
             attributes.put("error", HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase());
@@ -60,7 +104,7 @@ public class CustomErrorAttributes extends DefaultErrorAttributes {
             attributes.put("status", HttpStatus.FORBIDDEN.value());
             attributes.put("error", HttpStatus.FORBIDDEN.getReasonPhrase());
         }
+
         return attributes;
     }
-
 }

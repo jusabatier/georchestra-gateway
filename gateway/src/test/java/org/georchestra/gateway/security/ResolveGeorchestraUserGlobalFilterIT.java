@@ -1,10 +1,14 @@
 package org.georchestra.gateway.security;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import java.util.List;
+import java.util.Optional;
+
 import org.georchestra.gateway.accounts.admin.CreateAccountUserCustomizer;
 import org.georchestra.gateway.app.GeorchestraGatewayApplication;
 import org.georchestra.gateway.filter.headers.providers.JsonPayloadHeadersContributor;
 import org.georchestra.gateway.model.GatewayConfigProperties;
-import org.georchestra.gateway.model.HeaderMappings;
 import org.georchestra.gateway.security.preauth.PreauthAuthenticationManager;
 import org.georchestra.testcontainers.ldap.GeorchestraLdapContainer;
 import org.junit.jupiter.api.AfterAll;
@@ -20,12 +24,6 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 @SpringBootTest(classes = GeorchestraGatewayApplication.class)
 @AutoConfigureWebTestClient(timeout = "PT200S")
 @ActiveProfiles("georheaders")
@@ -39,7 +37,8 @@ public class ResolveGeorchestraUserGlobalFilterIT {
 
     private @Autowired ApplicationContext context;
 
-    public static GenericContainer httpEcho = new GenericContainer(DockerImageName.parse("ealen/echo-server")) {
+    @SuppressWarnings("rawtypes")
+    public static GenericContainer<?> httpEcho = new GenericContainer(DockerImageName.parse("ealen/echo-server")) {
         @Override
         protected void doStart() {
             super.doStart();
@@ -62,7 +61,8 @@ public class ResolveGeorchestraUserGlobalFilterIT {
         httpEcho.stop();
     }
 
-    public @Test void testReceivedHeadersAsJson() {
+    @Test
+    void testReceivedHeadersAsJson() {
         gatewayConfig.getDefaultHeaders().setJsonUser(Optional.of(true));
         gatewayConfig.getDefaultHeaders().setJsonOrganization(Optional.of(true));
         assertNotNull(context.getBean(JsonPayloadHeadersContributor.class));
@@ -77,7 +77,8 @@ public class ResolveGeorchestraUserGlobalFilterIT {
                 .jsonPath(".request.headers.sec-user").exists().jsonPath(".request.headers.sec-organization").exists();
     }
 
-    public @Test void testJsonUserNoOrganization() {
+    @Test
+    void testJsonUserNoOrganization() {
         gatewayConfig.getDefaultHeaders().setJsonUser(Optional.of(true));
         gatewayConfig.getDefaultHeaders().setJsonOrganization(Optional.of(false));
 
@@ -93,7 +94,8 @@ public class ResolveGeorchestraUserGlobalFilterIT {
 
     }
 
-    public @Test void testNoJsonUserJsonOrganization() {
+    @Test
+    void testNoJsonUserJsonOrganization() {
         gatewayConfig.getDefaultHeaders().setJsonUser(Optional.of(false));
         gatewayConfig.getDefaultHeaders().setJsonOrganization(Optional.of(true));
 
@@ -108,7 +110,8 @@ public class ResolveGeorchestraUserGlobalFilterIT {
                 .jsonPath(".request.headers.sec-organization").exists();
     }
 
-    public @Test void testSecOrgnamePresent() {
+    @Test
+    void testSecOrgnamePresent() {
         testClient.get().uri("/echo/")//
                 .header("Host", "localhost")//
                 .header("Authorization", "Basic dGVzdGFkbWluOnRlc3RhZG1pbg==") // testadmin:testadmin

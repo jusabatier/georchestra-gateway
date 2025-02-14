@@ -28,7 +28,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import reactor.core.publisher.Mono;
 
-/** Allows to enable routes only if a given spring profile is enabled */
+/**
+ * A Gateway filter factory that conditionally enables or disables routes based
+ * on the presence or absence of a specified Spring profile.
+ * <p>
+ * This filter is useful for dynamically controlling route availability
+ * depending on the application's active profiles. If the configured profile is
+ * active, the request is allowed to proceed; otherwise, the request is rejected
+ * with the specified HTTP status code.
+ * <p>
+ * Profiles can be negated using the {@code !} prefix. If a profile is prefixed
+ * with {@code !}, the route will be disabled if the profile is active.
+ */
 public class RouteProfileGatewayFilterFactory
         extends AbstractGatewayFilterFactory<RouteProfileGatewayFilterFactory.Config> {
 
@@ -52,6 +63,14 @@ public class RouteProfileGatewayFilterFactory
         return new RouteProfileGatewayFilter(environment, config);
     }
 
+    /**
+     * A filter that conditionally allows requests based on the presence of a
+     * specified Spring profile.
+     * <p>
+     * If the required profile is active, the request proceeds. If the profile is
+     * negated (e.g., {@code !profileName}), the request is blocked if the profile
+     * is active.
+     */
     @RequiredArgsConstructor
     private static class RouteProfileGatewayFilter implements GatewayFilter {
 
@@ -86,20 +105,29 @@ public class RouteProfileGatewayFilterFactory
         }
     }
 
+    /**
+     * Configuration class for {@link RouteProfileGatewayFilterFactory}.
+     * <p>
+     * Defines the profile condition and HTTP status code to return if the condition
+     * is not met.
+     */
     @Data
     @Accessors(chain = true)
     @Validated
     public static class Config {
 
         /**
-         * Profiles key, indicates which profiles must be enabled to allow the request
-         * to proceed
+         * The profile name that must be active for the request to proceed.
+         * <p>
+         * If prefixed with {@code !}, the request is blocked if the profile is active.
          */
         public static final String PROFILE_KEY = "profile";
 
         /**
-         * Status code key. HTTP status code to return when the request is not allowed
-         * to proceed because the required profiles are not active
+         * The HTTP status code to return when the request is blocked due to profile
+         * conditions.
+         * <p>
+         * Defaults to {@link HttpStatus#NOT_FOUND} (404).
          */
         public static final String HTTPSTATUS_KEY = "statusCode";
 

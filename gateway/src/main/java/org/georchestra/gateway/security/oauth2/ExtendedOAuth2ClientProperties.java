@@ -89,8 +89,6 @@ public class ExtendedOAuth2ClientProperties {
     public static class Provider extends OAuth2ClientProperties.Provider {
 
         private String endSessionUri;
-        private Boolean pivot;
-        private Map<String, Object> claims;
 
         /**
          * Retrieves the provider's end session URI, used for logging out the user.
@@ -108,22 +106,6 @@ public class ExtendedOAuth2ClientProperties {
          */
         public void setEndSessionUri(String endSessionUri) {
             this.endSessionUri = endSessionUri;
-        }
-
-        public Boolean getPivot() {
-            return this.pivot;
-        }
-
-        public void setPivot(Boolean pivot) {
-            this.pivot = pivot;
-        }
-
-        public Map<String, Object> getClaims() {
-            return this.claims;
-        }
-
-        public void setClaims(Map<String, Object> claims) {
-            this.claims = claims;
         }
     }
 }

@@ -73,11 +73,18 @@ public interface AccountManager {
     GeorchestraUser getOrCreate(GeorchestraUser mappedUser);
 
     /**
-     * 
-     * @param mappedUser the user {@link ResolveGeorchestraUserGlobalFilter}
-     *                   resolved by calling
+     * Retrieves the stored organization corresponding to the given
+     * {@code mappedUser}, or creates a new organization if one does not already
+     * exist in the repository.
+     * <p>
+     * </p>
+     *
+     * @param mappedUser the user resolved by
+     *                   {@link ResolveGeorchestraUserGlobalFilter}, obtained
+     *                   through a call to
      *                   {@link GeorchestraUserMapper#resolve(Authentication)}
-     * @return
+     * @return the stored version of the user, either previously existing or newly
+     *         created
      */
     void createUserOrgUniqueIdIfMissing(GeorchestraUser mappedUser);
 

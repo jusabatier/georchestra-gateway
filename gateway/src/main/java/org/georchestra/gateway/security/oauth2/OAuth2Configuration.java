@@ -153,14 +153,14 @@ public class OAuth2Configuration {
      * claims.
      *
      * @param nonStandardClaimsConfig Configuration for custom OIDC claims.
+     * @param properties              Configuration for custom OIDC claims.
      * @return An instance of {@link OpenIdConnectUserMapper}.
      */
     @Bean
     OpenIdConnectUserMapper openIdConnectGeorchestraUserUserMapper(
-            OpenIdConnectCustomClaimsConfigProperties nonStandardClaimsConfig,
-            ExtendedOAuth2ClientProperties properties) {
+            OpenIdConnectCustomClaimsConfigProperties nonStandardClaimsConfig) {
 
-        return new OpenIdConnectUserMapper(nonStandardClaimsConfig, properties);
+        return new OpenIdConnectUserMapper(nonStandardClaimsConfig);
     }
 
     /**
@@ -262,7 +262,7 @@ public class OAuth2Configuration {
         OidcReactiveOAuth2UserService oidUserService = new OidcReactiveOAuth2UserService();
         oidUserService.setOauth2UserService(oauth2Delegate);
         return oidUserService;
-    };
+    }
 
     /**
      * Configures a WebClient for OAuth2 authentication requests, supporting HTTP
@@ -288,6 +288,7 @@ public class OAuth2Configuration {
         // This filter will allow to convert JWT response to JSON.
         ExchangeFilterFunction handleJwtContentType = OpenIdHelper.transformJWTClientResponseToJSON();
 
-        return WebClient.builder().clientConnector(new ReactorClientHttpConnector(httpClient)).filter(handleJwtContentType).build();
+        return WebClient.builder().clientConnector(new ReactorClientHttpConnector(httpClient))
+                .filter(handleJwtContentType).build();
     }
 }

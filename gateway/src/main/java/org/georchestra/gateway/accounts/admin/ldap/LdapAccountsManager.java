@@ -409,6 +409,14 @@ class LdapAccountsManager extends AbstractAccountsManager {
         }
     }
 
+    /**
+     * Factory method to create a new org with the given id. Will set orgUniqueId if
+     * not null.
+     * 
+     * @param orgId       organization ID to create (cn)
+     * @param orgUniqueId uniqueOrgId field value
+     * @return {@link Org} created organization
+     */
     private Org newOrg(final String orgId, final String orgUniqueId) {
         Org org = newOrg(orgId);
         org.setOrgUniqueId(Optional.ofNullable(orgUniqueId).orElse(""));
@@ -416,7 +424,10 @@ class LdapAccountsManager extends AbstractAccountsManager {
     }
 
     /**
-     * Factory method to create a new org with the given id and return it
+     * Factory method to create a new org with the given id.
+     * 
+     * @param orgId organization ID to create (cn)
+     * @return {@link Org} created organization
      */
     private Org newOrg(final String orgId) {
         Org org = new Org();

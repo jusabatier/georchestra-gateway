@@ -94,22 +94,55 @@ public @Data class OpenIdConnectCustomClaimsConfigProperties {
         return Optional.ofNullable(organization);
     }
 
+    /**
+     * Retrieves the JSONPath extractor configuration for extracting the
+     * organization'field orgUniqueId (not UUID).
+     *
+     * @return an {@link Optional} containing the {@link JsonPathExtractor} for
+     *         organizationUid extraction.
+     */
     public Optional<JsonPathExtractor> organizationUid() {
         return Optional.ofNullable(organizationUid);
     }
 
+    /**
+     * Retrieves the JSONPath extractor configuration for extracting the family
+     * name.
+     *
+     * @return an {@link Optional} containing the {@link JsonPathExtractor} for
+     *         family name extraction.
+     */
     public Optional<JsonPathExtractor> familyName() {
         return Optional.ofNullable(familyName);
     }
 
+    /**
+     * Retrieves the JSONPath extractor configuration for extracting the given name.
+     *
+     * @return an {@link Optional} containing the {@link JsonPathExtractor} for
+     *         given name extraction.
+     */
     public Optional<JsonPathExtractor> givenName() {
         return Optional.ofNullable(givenName);
     }
 
+    /**
+     * Retrieves the JSONPath extractor configuration for extracting the email.
+     *
+     * @return an {@link Optional} containing the {@link JsonPathExtractor} for
+     *         email extraction.
+     */
     public Optional<JsonPathExtractor> email() {
         return Optional.ofNullable(email);
     }
 
+    /**
+     * Extract a provider claims mapping.
+     *
+     * @return an {@link Optional} containing the
+     *         {@link OpenIdConnectCustomClaimsConfigProperties} provider claims
+     *         mapping.
+     */
     public Optional<OpenIdConnectCustomClaimsConfigProperties> getProviderConfig(@NonNull String providerName) {
         return Optional.ofNullable(provider.get(providerName));
     }
@@ -252,6 +285,11 @@ public @Data class OpenIdConnectCustomClaimsConfigProperties {
         public JsonPathExtractor() {
         }
 
+        /**
+         * Constructor to pass path param directly.
+         * 
+         * @param path
+         */
         public JsonPathExtractor(List<String> path) {
             this.path = path;
         }

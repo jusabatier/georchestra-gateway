@@ -239,14 +239,59 @@ public abstract class AbstractAccountsManager implements AccountManager {
      */
     protected abstract Optional<GeorchestraUser> findByUsername(String username);
 
+    /**
+     * Finds a user by their email.
+     * <p>
+     * Implementations must provide a concrete method for retrieving users from
+     * storage.
+     * </p>
+     *
+     * @param email the email to search for
+     * @return an {@link Optional} containing the found user, or an empty
+     *         {@link Optional} if not found
+     */
     protected abstract Optional<GeorchestraUser> findByEmail(String email);
 
+    /**
+     * Affect a user to an organization according to user's credentials.
+     * <p>
+     * Will create organization if not exists. Will switch (and create if not
+     * exists) orgnization if OAuth2 crendentials contain an other org. Consider
+     * that Provider is a source of truth.
+     * 
+     * Implementations must define how users are linked to an organization and the
+     * behavior to manage organization in the storage.
+     * </p>
+     *
+     * @param mapped the user's OAuth2 credentials to search for
+     * @return an {@link Optional} containing the found user, or an empty
+     *         {@link Optional} if not found
+     */
     protected abstract void ensureOrgExists(GeorchestraUser mapped);
 
+    /**
+     * Finds a user by their organization id.
+     * <p>
+     * Implementations must provide a concrete method for retrieving organization
+     * from storage.
+     * </p>
+     *
+     * @param orgId the organization common name (CN) to search for
+     * @return an {@link Optional} containing the found organization, or an empty
+     *         {@link Optional} if not found
+     */
     protected abstract Optional<Org> findOrg(String orgId);
 
+    /**
+     * Unlink user from linked organization.
+     * <p>
+     * Implementations must define how users and organizations are unlink in the
+     * storage system.
+     * </p>
+     *
+     * @param existingUser the user to unlink
+     */
     protected abstract void unlinkUserOrg(GeorchestraUser existingUser);
-
 
     /**
      * Creates a new user in the repository.

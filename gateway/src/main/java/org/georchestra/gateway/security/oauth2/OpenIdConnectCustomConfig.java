@@ -30,13 +30,29 @@ import lombok.NonNull;
 @ConfigurationProperties(prefix = "georchestra.gateway.security.oidc.config")
 @Data
 public class OpenIdConnectCustomConfig {
+
     private Boolean searchEmail;
+
     private Map<String, OpenIdConnectCustomConfig> provider = new HashMap<>();
 
+    /**
+     * Return a sub {@OpenIdConnectCustomConfig} configuration for a given provider
+     * name.
+     * 
+     * @param providerName The {@String} provider name
+     * @return An {@OpenIdConnectCustomConfig} configuration according to current
+     *         provider in use
+     */
     public Optional<OpenIdConnectCustomConfig> getProviderConfig(@NonNull String providerName) {
         return Optional.ofNullable(provider.get(providerName));
     }
 
+    /**
+     * Determines if the user will be searched by email (false by default).
+     * 
+     * @param providerName provider id in use
+     * @return {@Boolean} true if user will be search by email from storage
+     */
     public boolean useEmail(@NonNull String providerName) {
         return getProviderConfig(providerName)
                 // provider config

@@ -51,8 +51,7 @@ class OpenIdConnectUserMapperTest {
     @BeforeEach
     void setUp() throws Exception {
         nonStandardClaimsConfig = new OpenIdConnectCustomClaimsConfigProperties();
-        properties = new ExtendedOAuth2ClientProperties();
-        mapper = new OpenIdConnectUserMapper(nonStandardClaimsConfig, properties);
+        mapper = new OpenIdConnectUserMapper(nonStandardClaimsConfig);
     }
 
     @Test

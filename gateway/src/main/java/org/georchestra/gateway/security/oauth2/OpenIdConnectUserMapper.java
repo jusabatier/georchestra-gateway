@@ -131,8 +131,6 @@ public class OpenIdConnectUserMapper extends OAuth2UserMapper {
 
     private final @NonNull OpenIdConnectCustomClaimsConfigProperties nonStandardClaimsConfig;
 
-    private final @NonNull ExtendedOAuth2ClientProperties extendedOAuth2ClientProperties;
-
     /**
      * Filters authentication tokens to process only {@link OidcUser}-based
      * authentication.

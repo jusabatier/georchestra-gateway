@@ -289,6 +289,7 @@ public class OAuth2Configuration {
             httpClient = httpClient.proxyWithSystemProperties();
         }
         ExchangeFilterFunction handleJwtContentType = OpenIdHelper.transformJWTClientResponseToJSON();
-        return WebClient.builder().clientConnector(new ReactorClientHttpConnector(httpClient)).filter(handleJwtContentType).build();
+        return WebClient.builder().clientConnector(new ReactorClientHttpConnector(httpClient))
+                .filter(handleJwtContentType).build();
     }
 }

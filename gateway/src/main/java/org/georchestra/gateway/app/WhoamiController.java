@@ -28,6 +28,7 @@ import org.georchestra.security.model.GeorchestraUser;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 
@@ -93,6 +94,7 @@ public class WhoamiController {
      *         details
      */
     @GetMapping(path = "/whoami", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
     public Mono<Map<String, Object>> whoami(Authentication principal, ServerWebExchange exchange) {
         GeorchestraUser user;
         try {
@@ -100,7 +102,13 @@ public class WhoamiController {
         } catch (DuplicatedEmailFoundException e) {
             user = null;
         }
+
         Map<String, Object> ret = new LinkedHashMap<>();
+        if (user != null) {
+            // notes is an internal field and should not be provided by the /whoami endpoint
+            // (see #170)
+            user.setNotes(null);
+        }
         ret.put("GeorchestraUser", user);
         if (principal == null) {
             ret.put("Authentication", null);

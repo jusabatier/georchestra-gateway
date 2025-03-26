@@ -153,7 +153,6 @@ public class OAuth2Configuration {
      * claims.
      *
      * @param nonStandardClaimsConfig Configuration for custom OIDC claims.
-     * @param properties              Configuration for custom OIDC claims.
      * @return An instance of {@link OpenIdConnectUserMapper}.
      */
     @Bean

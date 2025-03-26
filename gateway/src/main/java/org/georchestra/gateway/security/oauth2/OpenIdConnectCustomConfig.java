@@ -27,6 +27,37 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import lombok.Data;
 import lombok.NonNull;
 
+/**
+ * This class allow to set a custom configuration for OpenID Connect providers.
+ *
+ *<p>
+ * This configuration is not use to set claims or scopes.
+ * In fact, some providers needs a specific behavior to works with georchestra. So, this configuration allow to override general settings for a specific provider.
+ *
+ * For example, if you want to search a provider's user into georchestra's users by email, you need to set the searchEmail parameter to true under :
+ * georchestra.gateway.security.oidc.config.provider.[provider].searchEmail
+ * </p>
+ * 
+ * <p>
+ * Example configuration in {@code application.yml}:
+ * </p>
+ * 
+ * <pre>
+ * <code>
+ * georchestra:
+ *   gateway:
+ *     security:
+ *       oidc:
+ *         config:
+ *           searchEmail: false
+ *           provider:
+ *              proconnect:
+ *                  searchEmail: true
+ *              google:
+ *                  searchEmail: false
+ * </code>
+ * </pre>
+ */
 @ConfigurationProperties(prefix = "georchestra.gateway.security.oidc.config")
 @Data
 public class OpenIdConnectCustomConfig {

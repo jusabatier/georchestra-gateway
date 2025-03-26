@@ -236,7 +236,7 @@ This configuration is located under `georchestra.gateway.security.oidc.config`.
 All parameters are common.
 Provider's settings override general settings if exists or available such as claims mapping.
 
-By example with `searchEmail`, `georchestra.gateway.security.oidc.config.searchEmail` is override by `georchestra.gateway.security.oidc.config.provider.[provider].searchEmail`.
+By example with `searchEmail`, `georchestra.gateway.security.oidc.config.searchEmail` is overridden by `georchestra.gateway.security.oidc.config.provider.[provider].searchEmail`.
 
 |===
 |Property name | Default value | Description
@@ -349,7 +349,7 @@ You can replace `issuer-uri` by full configurations such as FranConnect.
 Note that ProConnect does not support the general `profile` scope, so it is required to specify each necessary
 OpenID fields one by one. You can find the list of claims https://github.com/numerique-gouv/proconnect-documentation/blob/main/doc_fs/scope-claims.md#correspondance-entre-scope-et-claims-sur-proconnect[here].
 
-Finally, ProConnect use a non standard claims "usual_name" instead of standard "family_name". You needs map claims (see next section) under  `georchestra.gateway.security.oidc.claims.provider`:
+Finally, ProConnect use a non standard claims "usual_name" instead of standard "family_name". You need map claims (see next section) under  `georchestra.gateway.security.oidc.claims.provider`:
 
 [source,yaml]
 ----
@@ -366,14 +366,14 @@ Finally, ProConnect use a non standard claims "usual_name" instead of standard "
 === Claims configuration
 
 Standard claims are automatically mapped between user Token infos and Spring-security. Spring seems to be aligned with https://openid.net/specs/openid-connect-core-1_0.html[OpenId specifications (5.1. Standard Claims)] for identifying token fields.
-Others claims can't be recognize and needs a custom mapping (non standard claims).
+Others claims can't be recognized and needs a custom mapping (non standard claims).
 
 Both standard and non-standard claims can be used to set the `GeorchestraUser`'s `organization` short name, `roles`, `email`, `firstname`, `lastname` properties
-using JSONPath expressions with `OidcUser#getClaims():Map<String, Object>` as the expresion's root object.
+using JSONPath expressions with `OidcUser#getClaims():Map<String, Object>` as the expression root object.
 
 > `org.springframework.security.oauth2.core.oidc.user.OidcUser`
 
-Not that 2 configurations level are available : 
+Not 2 configurations levels are available :
 
 - General claims settings : georchestra.gateway.security.oidc.Claims
 - Claims settings by provider : georchestra.gateway.security.oidc.claims.provider.<provider>

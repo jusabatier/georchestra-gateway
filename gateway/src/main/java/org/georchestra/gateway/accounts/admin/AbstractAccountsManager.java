@@ -81,13 +81,12 @@ public abstract class AbstractAccountsManager implements AccountManager {
     }
 
     public Optional<GeorchestraUser> findByEmailAndOAuth2OrgId(GeorchestraUser mappedUser) {
-        Optional<GeorchestraUser> user = null;
         // search user by email
         if ((null != mappedUser.getOAuth2Provider()) && (null != mappedUser.getOAuth2Uid())
                 && (null != mappedUser.getEmail())) {
-            user = findByEmail(mappedUser.getEmail());
+            return findByEmail(mappedUser.getEmail());
         }
-        return user;
+        return Optional.empty();
     }
 
     /**

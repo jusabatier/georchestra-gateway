@@ -70,4 +70,23 @@ public class ExtendedLdapAuthenticationIT {
                 .isEmpty();
     }
 
+    public @Test void testWhoamiNoNotesRevealed() {
+        testClient.get().uri("/whoami")//
+                .header("Authorization", "Basic dGVzdGFkbWluOnRlc3RhZG1pbg==") // testadmin:testadmin
+                .exchange()//
+                .expectStatus()//
+                .is2xxSuccessful()//
+                .expectBody()//
+                .jsonPath("$.GeorchestraUser.notes").isEmpty();
+    }
+
+    public @Test void testWhoamiNoAuth() {
+        testClient.get().uri("/whoami")//
+                .exchange()//
+                .expectStatus()//
+                .is2xxSuccessful()//
+                .expectBody()//
+                .jsonPath("$.GeorchestraUser").isEmpty();
+    }
+
 }

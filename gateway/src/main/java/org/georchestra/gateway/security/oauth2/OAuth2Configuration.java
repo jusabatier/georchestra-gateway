@@ -159,6 +159,7 @@ public class OAuth2Configuration {
     @Bean
     OpenIdConnectUserMapper openIdConnectGeorchestraUserUserMapper(
             OpenIdConnectCustomClaimsConfigProperties nonStandardClaimsConfig) {
+
         return new OpenIdConnectUserMapper(nonStandardClaimsConfig);
     }
 
@@ -288,7 +289,11 @@ public class OAuth2Configuration {
             log.info("OAuth2 client will use system-defined HTTP proxy settings if available.");
             httpClient = httpClient.proxyWithSystemProperties();
         }
+
+        // Client response application/jwt is not compatible with Spring-security
+        // This filter will allow to convert JWT response to JSON.
         ExchangeFilterFunction handleJwtContentType = OpenIdHelper.transformJWTClientResponseToJSON();
+
         return WebClient.builder().clientConnector(new ReactorClientHttpConnector(httpClient))
                 .filter(handleJwtContentType).build();
     }

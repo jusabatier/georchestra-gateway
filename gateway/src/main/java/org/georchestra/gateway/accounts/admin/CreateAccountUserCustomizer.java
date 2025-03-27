@@ -82,6 +82,7 @@ public class CreateAccountUserCustomizer implements GeorchestraUserCustomizerExt
                 }
             } else {
                 user = accounts.getOrCreate(mappedUser);
+                accounts.createUserOrgUniqueIdIfMissing(mappedUser);
             }
             user.setIsExternalAuth(true);
             loggedInUsers.put(auth, user);

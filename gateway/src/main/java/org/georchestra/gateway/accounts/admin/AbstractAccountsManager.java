@@ -80,15 +80,6 @@ public abstract class AbstractAccountsManager implements AccountManager {
         return find(mappedUser).orElseGet(() -> createIfMissing(mappedUser));
     }
 
-    public Optional<GeorchestraUser> findByEmailAndOAuth2OrgId(GeorchestraUser mappedUser) {
-        // search user by email
-        if ((null != mappedUser.getOAuth2Provider()) && (null != mappedUser.getOAuth2Uid())
-                && (null != mappedUser.getEmail())) {
-            return findByEmail(mappedUser.getEmail());
-        }
-        return Optional.empty();
-    }
-
     /**
      * Retrieves the stored user corresponding to {@code mappedUser}, if it exists.
      * <p>

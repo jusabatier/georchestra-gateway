@@ -13,16 +13,16 @@
   <version>${revision}</version>
   <packaging>pom</packaging>
   <name>gateway-root</name>
+  <modules>
+    <module>gateway</module>
+  </modules>
   <distributionManagement>
-   <repository>
+    <repository>
       <id>geOrchestra-artifactory</id>
       <name>geOrchestra Maven repository</name>
       <url>https://artifactory.georchestra.org/artifactory/georchestra/</url>
     </repository>
   </distributionManagement>
-  <modules>
-    <module>gateway</module>
-  </modules>
   <properties>
     <revision>1.2-SNAPSHOT</revision>
     <georchestra.version>24.1-SNAPSHOT</georchestra.version>
@@ -48,12 +48,12 @@
       <dependency>
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-core</artifactId>
-	<version>${logback.version}</version>
+        <version>${logback.version}</version>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>
-	<version>${logback.version}</version>
+        <version>${logback.version}</version>
       </dependency>
       <dependency>
         <groupId>org.springframework.cloud</groupId>

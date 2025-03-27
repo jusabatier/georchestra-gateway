@@ -26,10 +26,13 @@ import java.util.stream.Stream;
 import org.georchestra.gateway.model.GatewayConfigProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.ReactiveAuthenticationManager;
+import org.springframework.security.authentication.ReactiveAuthenticationManagerAdapter;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
@@ -105,15 +108,36 @@ public class GatewaySecurityConfiguration {
      * @return the configured {@link SecurityWebFilterChain}
      * @throws Exception if an error occurs during configuration
      */
+    /**
+     * Creates a default authentication manager when none is provided. This is
+     * necessary in Spring Boot 3 to ensure the security filter chain can be
+     * created.
+     * 
+     * @return a default ReactiveAuthenticationManager
+     */
+    @Bean
+    @ConditionalOnMissingBean(ReactiveAuthenticationManager.class)
+    ReactiveAuthenticationManager defaultAuthenticationManager() {
+        log.info("Creating default authentication manager");
+        return new ReactiveAuthenticationManagerAdapter(authentication -> {
+            // This is a fallback that simply rejects all authentications
+            return null;
+        });
+    }
+
     @Bean
     SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
-            List<ServerHttpSecurityCustomizer> customizers) throws Exception {
+            List<ServerHttpSecurityCustomizer> customizers, ReactiveAuthenticationManager authenticationManager)
+            throws Exception {
 
         log.info("Initializing security filter chain...");
 
         http.csrf(csrf -> csrf.disable());
         http.headers(headers -> headers.disable());
         http.exceptionHandling(handling -> handling.accessDeniedHandler(new CustomAccessDeniedHandler()));
+
+        // Set the authentication manager
+        http.authenticationManager(authenticationManager);
 
         http.formLogin(login -> login
                 .authenticationFailureHandler(new ExtendedRedirectServerAuthenticationFailureHandler("login?error"))

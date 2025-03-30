@@ -41,7 +41,8 @@ services:
     volumes:
       - datadir:/etc/georchestra
     environment:
-      - JAVA_TOOL_OPTIONS=-Dgeorchestra.datadir=/etc/georchestra -Dspring.profiles.active=docker -Xmx512M -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=0.0.0.0:5005
+      - SPRING_PROFILES_ACTIVE=docker,json-logs
+      - JAVA_TOOL_OPTIONS=-Dgeorchestra.datadir=/etc/georchestra -Xmx512M -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=0.0.0.0:5005
     restart: always
     ports:
       - 8080:8080

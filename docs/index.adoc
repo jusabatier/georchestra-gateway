@@ -63,3 +63,9 @@ and the additional property sources by means of spring-boot's
 `spring.config.import` environment property, like in:
 `spring.config.import: ${georchestra.datadir}/default.properties,${georchestra.datadir}/gateway/gateway.yaml`.
 
+== Advanced Topics
+
+=== Logging Configuration
+
+For detailed information about logging capabilities, configuration options, and best practices, refer to the xref:logging.adoc[Logging Configuration] guide.
+

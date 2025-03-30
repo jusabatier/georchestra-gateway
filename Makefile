@@ -1,10 +1,10 @@
 all: install test docker
 
 install:
-	./mvnw clean install -pl :georchestra-gateway -ntp -DskipTests
+	./mvnw clean install -ntp -DskipTests
 
 test:
-	./mvnw verify -pl :georchestra-gateway -ntp
+	./mvnw verify -ntp
 
 docker:
 	@TAG=`./mvnw -f gateway/ help:evaluate -q -DforceStdout -Dexpression=imageTag` && \

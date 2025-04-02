@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: georchestra-gateway
+
+logging:
+  level:
+    root: INFO
+    org.georchestra.gateway: DEBUG
+  
+  # MDC configuration
+  mdc:
+    enabled: true
+    include:
+      # HTTP request MDC properties
+      http:
+        id: true
+        method: true
+        url: true
+        remote-addr: true
+        query-string: true
+        parameters: false 
+        headers: true
+        headers-pattern: "(?i)x-.*|correlation-.*"
+      
+      # User authentication MDC properties
+      user:
+        id: true
+        roles: true
+        org: false
+        auth-method: true
+      
+      # Application environment MDC properties
+      app:
+        name: true
+        version: true
+        profile: true
+        instance-id: false
+    
+  # Access log configuration
+  accesslog:
+    info:
+      - ".*\\/api\\/.*"
+      - ".*\\/ws\\/.*"
+    debug:
+      - ".*\\/admin\\/.*"
+    trace:
+      - ".*\\/debug\\/.*"

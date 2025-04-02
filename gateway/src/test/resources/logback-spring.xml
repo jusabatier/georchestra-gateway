@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
+
+  <springProfile name="!(json-logs)">
+    <include resource="org/springframework/boot/logging/logback/base.xml" />
+  </springProfile>
+
+  <springProfile name="json-logs-test">
+    <property name="TARGET_FILE" value="${TEST_LOG_FILE:-target/test-logs/gateway-test-logs.json}" />
+
+    <appender name="jsonFileAppender" class="ch.qos.logback.core.FileAppender">
+      <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+      <file>${TARGET_FILE}</file>
+      <immediateFlush>true</immediateFlush>
+    </appender>
+
+    <appender name="jsonConsoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+    </appender>
+
+    <logger name="org.georchestra.gateway.accesslog" level="INFO" additivity="false">
+      <appender-ref ref="jsonConsoleAppender" />
+      <appender-ref ref="jsonFileAppender" />
+    </logger>
+
+    <root level="INFO">
+      <appender-ref ref="CONSOLE" />
+    </root>
+  </springProfile>
+
+</configuration>

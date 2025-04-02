@@ -40,6 +40,10 @@
   <dependencies>
     <dependency>
       <groupId>org.georchestra</groupId>
+      <artifactId>georchestra-gateway-logging</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.georchestra</groupId>
       <artifactId>georchestra-ldap-account-management</artifactId>
       <exclusions>
         <exclusion>
@@ -194,142 +198,16 @@
       <version>0.12.5</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <version>4.2.0</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.jacoco</groupId>
-          <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.12</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <configuration>
-            <argLine>-javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar
-            -Xshare:off</argLine>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-failsafe-plugin</artifactId>
-          <configuration>
-            <argLine>-javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar
-            -Xshare:off</argLine>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
-      <plugin>
-        <groupId>net.revelc.code.formatter</groupId>
-        <artifactId>formatter-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>${fmt.action}</goal>
-            </goals>
-          </execution>
-        </executions>
-        <inherited>true</inherited>
-        <configuration>
-          <skip>${fmt.skip}</skip>
-          <configFile>${maven.multiModuleProjectDirectory}/.mvn/formatter.xml</configFile>
-          <compilerSource>${java.version}</compilerSource>
-          <compilerCompliance>${java.version}</compilerCompliance>
-          <compilerTargetPlatform>${java.version}</compilerTargetPlatform>
-          <!-- Use Unix and Mac style line endings -->
-          <lineEnding>LF</lineEnding>
-          <encoding>UTF-8</encoding>
-          <skipJsFormatting>true</skipJsFormatting>
-          <skipCssFormatting>true</skipCssFormatting>
-          <skipHtmlFormatting>true</skipHtmlFormatting>
-          <skipJsonFormatting>true</skipJsonFormatting>
-          <skipXmlFormatting>true</skipXmlFormatting>
-          <skipJavaFormatting>false</skipJavaFormatting>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>enforce-maven-and-java</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <requireJavaVersion>
-                  <version>[${java.version},)</version>
-                </requireJavaVersion>
-                <requireMavenVersion>
-                  <version>[3.6.3,)</version>
-                </requireMavenVersion>
-              </rules>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>com.github.ekryd.sortpom</groupId>
-        <artifactId>sortpom-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>verify</phase>
-            <goals>
-              <goal>${pom.fmt.action}</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <skip>${pom.fmt.skip}</skip>
-          <pomFile>pom.xml</pomFile>
-          <keepBlankLines>true</keepBlankLines>
-          <spaceBeforeCloseEmptyElement>false</spaceBeforeCloseEmptyElement>
-          <createBackupFile>false</createBackupFile>
-          <verifyFail>stop</verifyFail>
-          <verifyFailOn>strict</verifyFailOn>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>flatten-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>flatten</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>flatten</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>flatten.clean</id>
-            <phase>clean</phase>
-            <goals>
-              <goal>clean</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <updatePomFile>true</updatePomFile>
-          <!--flattenMode>resolveCiFriendliesOnly</flattenMode -->
-          <flattenMode>oss</flattenMode>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
+      <!-- Keep only the plugins that are specific to this module -->
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
@@ -341,65 +219,6 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>io.github.git-commit-id</groupId>
-        <artifactId>git-commit-id-maven-plugin</artifactId>
-        <version>7.0.0</version>
-        <executions>
-          <execution>
-            <id>get-the-git-infos</id>
-            <phase>initialize</phase>
-            <goals>
-              <goal>revision</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <failOnNoGitDirectory>false</failOnNoGitDirectory>
-          <generateGitPropertiesFile>true</generateGitPropertiesFile>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>prepare-agent</id>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>report</id>
-            <phase>test</phase>
-            <goals>
-              <goal>report</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <annotationProcessorPaths>
-            <path>
-              <groupId>org.springframework.boot</groupId>
-              <artifactId>spring-boot-configuration-processor</artifactId>
-            </path>
-            <path>
-              <groupId>org.projectlombok</groupId>
-              <artifactId>lombok</artifactId>
-              <version>${lombok.version}</version>
-            </path>
-            <path>
-              <groupId>org.projectlombok</groupId>
-              <artifactId>lombok-mapstruct-binding</artifactId>
-              <version>0.2.0</version>
-            </path>
-          </annotationProcessorPaths>
-        </configuration>
       </plugin>
     </plugins>
   </build>

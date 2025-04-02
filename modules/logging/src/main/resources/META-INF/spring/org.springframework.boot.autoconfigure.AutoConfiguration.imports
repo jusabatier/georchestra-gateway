@@ -1,0 +1,3 @@
+org.georchestra.gateway.autoconfigure.logging.accesslog.AccessLogWebFluxAutoConfiguration
+org.georchestra.gateway.autoconfigure.logging.mdc.LoggingMDCWebFluxAutoConfiguration
+org.georchestra.gateway.autoconfigure.logging.gateway.GatewayMdcAutoConfiguration

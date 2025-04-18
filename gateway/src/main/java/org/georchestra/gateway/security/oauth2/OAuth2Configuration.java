@@ -269,12 +269,14 @@ public class OAuth2Configuration {
     OidcReactiveOAuth2UserService oidcReactiveOAuth2UserService(DefaultReactiveOAuth2UserService oauth2Delegate) {
         OidcReactiveOAuth2UserService oidUserService = new OidcReactiveOAuth2UserService();
         oidUserService.setRetrieveUserInfo(userRequest -> {
-            // This is basically the same implementation as the default one in OidcUserRequestUtils::shouldRetrieveUserInfo,
-            // but returning true also if the token does not carry any scopes.
+            // This is basically the same implementation as the default one in
+            // OidcUserRequestUtils::shouldRetrieveUserInfo, but returning true also if the
+            // token does not carry any scopes.
             //
-            // Since the spring upgrade (PR #190), the token does not carry the scopes anymore, leading to
-            // the default implementation of shouldRetrieveUserInfo returning false. We do need to retrieve
-            // the user infos, else the gateway will likely to be unable to create a LDAP user afterward.
+            // Following the spring upgrade (PR #190), the token does not carry the scopes
+            // anymore, leading to the default implementation of shouldRetrieveUserInfo
+            // returning false. We do need to retrieve the user infos, else the gateway will
+            // likely to be unable to create a LDAP user afterward.
             ClientRegistration clientRegistration = userRequest.getClientRegistration();
             if (!StringUtils.hasLength(clientRegistration.getProviderDetails().getUserInfoEndpoint().getUri())) {
                 return false;

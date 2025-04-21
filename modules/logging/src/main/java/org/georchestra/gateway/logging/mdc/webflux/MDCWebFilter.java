@@ -223,8 +223,8 @@ public class MDCWebFilter implements OrderedWebFilter {
         }
 
         // Note: Organization is not added here as it's specific to geOrchestra user
-        // objects
-        // and would need to be handled separately based on the actual user object type
+        // objects. It is handled in
+        // gateway/src/main/java/org/georchestra/gateway/filter/global/GeorchestraUserMdcGlobalFilter.java
     }
 
     /**

@@ -28,6 +28,7 @@ logging:
       user:
         id: true
         roles: false
+        org: true
       application:
         name: true
         version: true

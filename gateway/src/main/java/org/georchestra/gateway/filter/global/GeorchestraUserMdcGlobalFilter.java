@@ -87,7 +87,7 @@ public class GeorchestraUserMdcGlobalFilter implements GlobalFilter, Ordered {
                 // Add custom MDC attributes
                 Optional<Organization> opt_org = GeorchestraOrganizations.resolve(exchange);
                 opt_org.ifPresent(org -> {
-                    mdcMap.put("enduser.org.id", org.getId());
+                    mdcMap.put("enduser.org.uuid", org.getId());
                     mdcMap.put("enduser.org.shortname", org.getShortName());
                     mdcMap.put("enduser.org.fullname", org.getName());
                 });

@@ -254,7 +254,7 @@ public class MDCWebFilter implements OrderedWebFilter {
     public void setHttpMdcAttributes(ServerWebExchange exchange) {
         ServerHttpRequest req = exchange.getRequest();
         httpConfig.id(req::getHeaders).remoteAddr(req.getRemoteAddress()).method(() -> req.getMethod().name())
-                .url(uri(req)).queryString(queryString(req)).parameters(req::getQueryParams).headers(req::getHeaders)
+                .path(path(req)).queryString(queryString(req)).parameters(req::getQueryParams).headers(req::getHeaders)
                 .cookies(req::getCookies);
     }
 
@@ -267,7 +267,7 @@ public class MDCWebFilter implements OrderedWebFilter {
      * @param req the HTTP request
      * @return a Supplier that provides the request URI path
      */
-    private Supplier<String> uri(ServerHttpRequest req) {
+    private Supplier<String> path(ServerHttpRequest req) {
         return () -> req.getURI().getRawPath();
     }
 

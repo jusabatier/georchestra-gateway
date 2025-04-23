@@ -19,14 +19,13 @@
 package org.georchestra.gateway.autoconfigure.app;
 
 import org.georchestra.gateway.filter.global.ApplicationErrorGatewayFilterFactory;
-import org.georchestra.gateway.filter.global.GeorchestraUserMdcGlobalFilter;
+import org.georchestra.gateway.filter.global.MdcUserAndOrgGlobalFilter;
 import org.georchestra.gateway.filter.global.LoginParamRedirectGatewayFilterFactory;
 import org.georchestra.gateway.filter.global.ResolveTargetGlobalFilter;
 import org.georchestra.gateway.filter.headers.HeaderFiltersConfiguration;
 import org.georchestra.gateway.logging.mdc.config.AuthenticationMdcConfigProperties;
 import org.georchestra.gateway.model.GatewayConfigProperties;
 import org.georchestra.gateway.model.GeorchestraTargetConfig;
-import org.georchestra.gateway.security.ResolveGeorchestraUserGlobalFilter;
 import org.geoserver.cloud.gateway.filter.RouteProfileGatewayFilterFactory;
 import org.geoserver.cloud.gateway.filter.StripBasePathGatewayFilterFactory;
 import org.geoserver.cloud.gateway.predicate.RegExpQueryRoutePredicateFactory;
@@ -85,11 +84,11 @@ public class FiltersAutoConfiguration {
      * <p>
      *
      * @param authConfig the logging auth configuration properties
-     * @return an instance of {@link GeorchestraUserMdcGlobalFilter}
+     * @return an instance of {@link MdcUserAndOrgGlobalFilter}
      */
     @Bean
-    GeorchestraUserMdcGlobalFilter resolveGeorchestraUserMdcWebFilter(AuthenticationMdcConfigProperties authConfig) {
-        return new GeorchestraUserMdcGlobalFilter(authConfig);
+    MdcUserAndOrgGlobalFilter resolveGeorchestraUserMdcWebFilter(AuthenticationMdcConfigProperties authConfig) {
+        return new MdcUserAndOrgGlobalFilter(authConfig);
     }
 
     /**

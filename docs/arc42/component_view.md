@@ -68,6 +68,7 @@ This diagram shows the detailed internal structure of the Gateway with component
 - **ResolveGeorchestraUserGlobalFilter**: Extracts authenticated user information
 - **ResolveTargetGlobalFilter**: Determines the target service configuration
 - **GlobalUriFilter**: Fixes URI encoding issues
+- **MdcUserAndOrgGlobalFilter**: Adds user and organization-related MDCs in the access logs
 
 #### Gateway Filter Factories
 - **ApplicationErrorGatewayFilterFactory**: Handles application errors and creates friendly responses

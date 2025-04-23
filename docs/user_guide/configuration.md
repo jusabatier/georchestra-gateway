@@ -157,9 +157,10 @@ logging:
   mdc:
     include:
       user:
-        id: true           # Include user ID in enduser.id
+        id: true           # Include user ID in enduser.id and enduser.uuid
         roles: true        # Include user roles in enduser.roles
-        org: true          # Include user's organization in enduser.org
+        org: true          # Include user's organization ID: enduser.org.id (shortname) and enduser.org.uuid 
+        extras: true       # include human-friendly labels enduser.firstname, enduser.lastname, enduser.org.fullname
         auth-method: true  # Include authentication method in enduser.auth-method
 ```
 

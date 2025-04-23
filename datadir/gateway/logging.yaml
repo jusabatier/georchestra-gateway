@@ -23,12 +23,15 @@ logging:
   # The following are default values. The MDC attributes will be automatically
   # included when using the json-logs profile. For the regular console output you could tweak the logback-spring.xml
   # config file to include the required MDC properties
+  # In any case, the activated MDC will be visible when using the OpenTelemetry protocol
   mdc:
     include:
       user:
         id: true
         roles: false
         org: true
+        extras: false
+        auth-method: false
       application:
         name: true
         version: true

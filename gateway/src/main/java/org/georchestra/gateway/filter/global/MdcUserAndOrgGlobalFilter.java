@@ -37,8 +37,9 @@ import reactor.core.publisher.Mono;
 import java.util.*;
 
 /**
- * A {@link GlobalFilter} that adds user and org-related MDC (Mapping Diagnostic
- * Context) if respectively logging.mdc.include.user.id = true and
+ * A {@link GlobalFilter} that adds user and org-related MDC (Mapping Diagnostic Context) if respectively
+ * logging.mdc.include.user.id = true
+ * and
  * logging.mdc.include.user.org= true
  * <p>
  * This filter executes after user and org resolution in
@@ -47,7 +48,7 @@ import java.util.*;
  */
 @RequiredArgsConstructor
 @Slf4j
-public class GeorchestraUserMdcGlobalFilter implements GlobalFilter, Ordered {
+public class MdcUserAndOrgGlobalFilter implements GlobalFilter, Ordered {
 
     /**
      * The execution order of this filter, ensuring it runs after user/org
@@ -67,7 +68,7 @@ public class GeorchestraUserMdcGlobalFilter implements GlobalFilter, Ordered {
      */
     @Override
     public int getOrder() {
-        return GeorchestraUserMdcGlobalFilter.ORDER;
+        return MdcUserAndOrgGlobalFilter.ORDER;
     }
 
     /**
@@ -88,17 +89,21 @@ public class GeorchestraUserMdcGlobalFilter implements GlobalFilter, Ordered {
                 Optional<Organization> opt_org = GeorchestraOrganizations.resolve(exchange);
                 opt_org.ifPresent(org -> {
                     mdcMap.put("enduser.org.uuid", org.getId());
-                    mdcMap.put("enduser.org.shortname", org.getShortName());
-                    mdcMap.put("enduser.org.fullname", org.getName());
+                    mdcMap.put("enduser.org.id", org.getShortName());
+                    if (authConfig.isExtras()) {
+                        mdcMap.put("enduser.org.fullname", org.getName());
+                    }
                 });
             }
             if (authConfig.isId()) {
                 // Add custom MDC attributes
                 Optional<GeorchestraUser> opt_user = GeorchestraUsers.resolve(exchange);
                 opt_user.ifPresent(user -> {
-                    mdcMap.put("enduser.firstname", user.getFirstName());
-                    mdcMap.put("enduser.lastname", user.getLastName());
                     mdcMap.put("enduser.uuid", user.getId());
+                    if (authConfig.isExtras()) {
+                        mdcMap.put("enduser.firstname", user.getFirstName());
+                        mdcMap.put("enduser.lastname", user.getLastName());
+                    }
                 });
             }
             return context.put(ReactorContextHolder.MDC_CONTEXT_KEY, mdcMap);

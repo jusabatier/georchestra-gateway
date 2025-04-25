@@ -19,9 +19,11 @@
 package org.georchestra.gateway.autoconfigure.app;
 
 import org.georchestra.gateway.filter.global.ApplicationErrorGatewayFilterFactory;
+import org.georchestra.gateway.filter.global.MdcUserAndOrgGlobalFilter;
 import org.georchestra.gateway.filter.global.LoginParamRedirectGatewayFilterFactory;
 import org.georchestra.gateway.filter.global.ResolveTargetGlobalFilter;
 import org.georchestra.gateway.filter.headers.HeaderFiltersConfiguration;
+import org.georchestra.gateway.logging.mdc.config.AuthenticationMdcConfigProperties;
 import org.georchestra.gateway.model.GatewayConfigProperties;
 import org.georchestra.gateway.model.GeorchestraTargetConfig;
 import org.geoserver.cloud.gateway.filter.RouteProfileGatewayFilterFactory;
@@ -56,7 +58,7 @@ import org.springframework.context.annotation.Import;
 @AutoConfiguration
 @AutoConfigureBefore(GatewayAutoConfiguration.class)
 @Import(HeaderFiltersConfiguration.class)
-@EnableConfigurationProperties(GatewayConfigProperties.class)
+@EnableConfigurationProperties({ GatewayConfigProperties.class, AuthenticationMdcConfigProperties.class })
 public class FiltersAutoConfiguration {
 
     /**
@@ -73,6 +75,20 @@ public class FiltersAutoConfiguration {
     @Bean
     ResolveTargetGlobalFilter resolveTargetWebFilter(GatewayConfigProperties config) {
         return new ResolveTargetGlobalFilter(config);
+    }
+
+    /**
+     * Registers a {@link GlobalFilter} that adds user and org-related MDC (Mapping
+     * Diagnostic Context) if respectively logging.mdc.include.user.id = true and
+     * logging.mdc.include.user.org= true
+     * <p>
+     *
+     * @param authConfig the logging auth configuration properties
+     * @return an instance of {@link MdcUserAndOrgGlobalFilter}
+     */
+    @Bean
+    MdcUserAndOrgGlobalFilter resolveGeorchestraUserMdcWebFilter(AuthenticationMdcConfigProperties authConfig) {
+        return new MdcUserAndOrgGlobalFilter(authConfig);
     }
 
     /**

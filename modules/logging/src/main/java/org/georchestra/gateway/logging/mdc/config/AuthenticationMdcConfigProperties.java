@@ -52,17 +52,23 @@ import lombok.Data;
 @ConfigurationProperties(prefix = "logging.mdc.include.user")
 public class AuthenticationMdcConfigProperties {
 
-    /** Whether to append the enduser.id MDC property for the authenticated user. */
+    /** Whether to append the enduser.id and enduser.uuid MDC properties for the authenticated user. */
     private boolean id = true;
 
     /** Whether to append the enduser.roles MDC property containing user roles. */
     private boolean roles = false;
 
     /**
-     * Whether to append the enduser.org MDC property representing the user's
+     * Whether to append the enduser.org.id and enduser.org.uuid MDC properties representing the user's
      * organization.
      */
     private boolean org = false;
+
+    /**
+     * Whether to append extra MDC properties for the authenticated user:
+     * enduser.firstname, enduser.lastname, enduser.org.fullname
+     */
+    private boolean extras = false;
 
     /**
      * Whether to append the enduser.auth-method MDC property for the authentication

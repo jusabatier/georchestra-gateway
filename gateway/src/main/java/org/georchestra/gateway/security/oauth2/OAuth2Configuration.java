@@ -18,19 +18,9 @@
  */
 package org.georchestra.gateway.security.oauth2;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
-import java.lang.reflect.Field;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import javax.crypto.spec.SecretKeySpec;
-
+import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTParser;
+import lombok.extern.slf4j.Slf4j;
 import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties;
 import org.georchestra.gateway.security.ServerHttpSecurityCustomizer;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -49,6 +39,7 @@ import org.springframework.security.oauth2.client.oidc.web.server.logout.OidcCli
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository;
 import org.springframework.security.oauth2.client.userinfo.DefaultReactiveOAuth2UserService;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.BadJwtException;
@@ -56,15 +47,24 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoderFactory;
 import org.springframework.security.web.server.authentication.logout.ServerLogoutSuccessHandler;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import com.nimbusds.jwt.JWT;
-import com.nimbusds.jwt.JWTParser;
-
-import lombok.extern.slf4j.Slf4j;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.transport.ProxyProvider;
+
+import javax.crypto.spec.SecretKeySpec;
+import java.lang.reflect.Field;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static org.springframework.security.config.Customizer.withDefaults;
 
 /**
  * OAuth2 security configuration for geOrchestra's Gateway.
@@ -268,6 +268,28 @@ public class OAuth2Configuration {
     @Bean
     OidcReactiveOAuth2UserService oidcReactiveOAuth2UserService(DefaultReactiveOAuth2UserService oauth2Delegate) {
         OidcReactiveOAuth2UserService oidUserService = new OidcReactiveOAuth2UserService();
+        oidUserService.setRetrieveUserInfo(userRequest -> {
+            // This is basically the same implementation as the default one in
+            // OidcUserRequestUtils::shouldRetrieveUserInfo, but returning true also if the
+            // token does not carry any scopes.
+            //
+            // Following the spring upgrade (PR #190), the token does not carry the scopes
+            // anymore, leading to the default implementation of shouldRetrieveUserInfo
+            // returning false. We do need to retrieve the user infos, else the gateway will
+            // likely to be unable to create a LDAP user afterward.
+            ClientRegistration clientRegistration = userRequest.getClientRegistration();
+            if (!StringUtils.hasLength(clientRegistration.getProviderDetails().getUserInfoEndpoint().getUri())) {
+                return false;
+            }
+            if (AuthorizationGrantType.AUTHORIZATION_CODE.equals(clientRegistration.getAuthorizationGrantType())) {
+                if (userRequest.getAccessToken().getScopes().isEmpty()) {
+                    return true;
+                }
+                return CollectionUtils.containsAny(userRequest.getAccessToken().getScopes(),
+                        userRequest.getClientRegistration().getScopes());
+            }
+            return false;
+        });
         oidUserService.setOauth2UserService(oauth2Delegate);
         return oidUserService;
     }

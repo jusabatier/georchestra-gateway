@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.StringUtils;
 import org.georchestra.ds.DataServiceException;
 import org.georchestra.ds.DuplicatedCommonNameException;
@@ -251,16 +252,18 @@ class LdapAccountsManager extends AbstractAccountsManager {
     }
 
     /**
-     * Ensures the organization associated with a user exists in LDAP.
+     * Ensures the role exists in LDAP.
      *
-     * @param newAccount the account whose organization needs verification
+     * @param role The CN of the role LDAP-side as a string.
+     * @throws DataServiceException
      */
-    private void ensureRoleExists(String role) throws DataServiceException {
+    @VisibleForTesting
+    void ensureRoleExists(String role) throws DataServiceException {
         try {
             roleDao.findByCommonName(role);
         } catch (NameNotFoundException notFound) {
             try {
-                roleDao.insert(RoleFactory.create(role, null, null));
+                roleDao.insert(RoleFactory.create(role, null, false));
             } catch (DuplicatedCommonNameException e) {
                 throw new IllegalStateException(e);
             }

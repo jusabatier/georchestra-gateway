@@ -40,7 +40,7 @@ logging:
       http:
         id: true
         method: true
-        url: true
+        path: true
         query-string: false
         parameters: false
         headers: false

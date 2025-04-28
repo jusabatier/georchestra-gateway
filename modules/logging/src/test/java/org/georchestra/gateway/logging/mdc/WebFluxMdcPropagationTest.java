@@ -99,7 +99,7 @@ class WebFluxMdcPropagationTest {
         // Configure what HTTP properties we want to capture
         httpConfig.setId(true);
         httpConfig.setMethod(true);
-        httpConfig.setUrl(true);
+        httpConfig.setPath(true);
         httpConfig.setRemoteAddr(true);
 
         // Run the filter
@@ -111,8 +111,8 @@ class WebFluxMdcPropagationTest {
         // Check that MDC was propagated to the filter chain
         Map<String, String> capturedMdc = filterChain.getCapturedMdc();
         assertThat(capturedMdc).isNotEmpty().containsKey("http.request.id").containsKey("http.request.method")
-                .containsKey("http.request.url").containsEntry("http.request.id", "test-request-id")
-                .containsEntry("http.request.method", "GET").containsEntry("http.request.url", "/test");
+                .containsKey("http.request.path").containsEntry("http.request.id", "test-request-id")
+                .containsEntry("http.request.method", "GET").containsEntry("http.request.path", "/test");
     }
 
     @Test

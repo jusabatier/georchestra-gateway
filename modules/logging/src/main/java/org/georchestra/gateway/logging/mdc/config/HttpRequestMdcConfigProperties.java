@@ -59,7 +59,7 @@ import lombok.NonNull;
  *       http:
  *         id: true
  *         method: true
- *         url: true
+ *         path: true
  *         remote-addr: true
  *         headers: true
  *         headers-pattern: "(?i)x-.*|correlation-.*"
@@ -105,9 +105,10 @@ public class HttpRequestMdcConfigProperties {
     private boolean method = true;
 
     /**
-     * Whether to append the http.request.url MDC property, without the query string
+     * Whether to append the http.request.path MDC property, without the query
+     * string
      */
-    private boolean url = true;
+    private boolean path = true;
 
     /**
      * Whether to append one http.request.parameter.[name] MDC property from each
@@ -246,8 +247,8 @@ public class HttpRequestMdcConfigProperties {
         return this;
     }
 
-    public HttpRequestMdcConfigProperties url(Supplier<String> url) {
-        put("http.request.url", this::isUrl, url);
+    public HttpRequestMdcConfigProperties path(Supplier<String> path) {
+        put("http.request.path", this::isPath, path);
         return this;
     }
 

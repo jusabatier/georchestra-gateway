@@ -13,6 +13,11 @@
   <version>${revision}</version>
   <packaging>pom</packaging>
   <name>gateway-root</name>
+  <scm>
+   <connection>scm:git:https://github.com/georchestra/georchestra-gateway.git</connection>
+   <developerConnection>scm:git:https://github.com/georchestra/georchestra-gateway.git</developerConnection>
+   <url>https://github.com/georchestra/georchestra-gateway</url>
+  </scm>
   <modules>
     <module>modules</module>
     <module>gateway</module>

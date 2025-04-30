@@ -37,9 +37,8 @@ import reactor.core.publisher.Mono;
 import java.util.*;
 
 /**
- * A {@link GlobalFilter} that adds user and org-related MDC (Mapping Diagnostic Context) if respectively
- * logging.mdc.include.user.id = true
- * and
+ * A {@link GlobalFilter} that adds user and org-related MDC (Mapping Diagnostic
+ * Context) if respectively logging.mdc.include.user.id = true and
  * logging.mdc.include.user.org= true
  * <p>
  * This filter executes after user and org resolution in

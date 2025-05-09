@@ -12,7 +12,7 @@ source .venv/bin/activate
 
 # Install MkDocs and required plugins
 echo "Installing MkDocs and plugins..."
-pip install -r docs/requirements.txt
+pip install -r mkdocs_requirements.txt
 
 # Check if MkDocs was installed successfully
 if ! .venv/bin/mkdocs --version &> /dev/null; then

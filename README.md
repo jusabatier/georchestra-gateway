@@ -118,7 +118,7 @@ Then visit http://127.0.0.1:8000 in your browser.
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](https://docs.georchestra.org/gateway/developer_guide/contributing/) for details.
+We welcome contributions! Please see our [Contributing Guide](https://docs.georchestra.org/gateway/en/latest/developer_guide/contributing/) for details.
 
 ## About geOrchestra
 

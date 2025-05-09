@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/georchestra/georchestra-gateway/actions"><img src="https://github.com/georchestra/georchestra-gateway/actions/workflows/maven.yml/badge.svg" alt="Build Status"></a>
-  <a href="https://www.georchestra.org/georchestra-gateway/"><img src="https://img.shields.io/badge/docs-latest-blue" alt="Documentation"></a>
+  <a href="https://docs.georchestra.org/gateway/"><img src="https://img.shields.io/badge/docs-latest-blue" alt="Documentation"></a>
   <a href="https://github.com/georchestra/georchestra-gateway/blob/main/LICENSE.txt"><img src="https://img.shields.io/github/license/georchestra/georchestra-gateway" alt="License"></a>
 </p>
 
@@ -39,7 +39,7 @@ The geOrchestra Gateway is a Spring Cloud Gateway-based service that provides a 
 
 ## Documentation
 
-Visit our [comprehensive documentation](https://www.georchestra.org/georchestra-gateway/) to learn more about installation, configuration, and development.
+Visit our [comprehensive documentation](https://docs.georchestra.org/gateway/) to learn more about installation, configuration, and development.
 
 ## Quick Start
 
@@ -68,7 +68,7 @@ georchestra:
       # Additional LDAP configuration
 ```
 
-For detailed configuration options, see the [Configuration Guide](https://www.georchestra.org/georchestra-gateway/user_guide/configuration/).
+For detailed configuration options, see the [Configuration Guide](https://docs.georchestra.org/gateway/user_guide/configuration/).
 
 ## Building from Source
 
@@ -118,7 +118,7 @@ Then visit http://127.0.0.1:8000 in your browser.
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](https://www.georchestra.org/georchestra-gateway/developer_guide/contributing/) for details.
+We welcome contributions! Please see our [Contributing Guide](https://docs.georchestra.org/gateway/developer_guide/contributing/) for details.
 
 ## About geOrchestra
 

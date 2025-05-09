@@ -23,9 +23,13 @@ generate_diagrams() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Activate the virtual environment
-if [ -d ".venv" ]; then
-    source .venv/bin/activate
-    echo "Virtual environment activated"
+if [ -d "venv_mkdocs" ]; then
+  if [ -n "$WINDIR" ] || [ -n "$MSYSTEM" ]; then
+      echo "Sorry : you are on Windows"
+      source venv_mkdocs/Scripts/activate
+  else
+      source venv_mkdocs/bin/activate
+  fi
 else
     echo "Error: Virtual environment not found. Please run ./setup_mkdocs.sh first."
     exit 1

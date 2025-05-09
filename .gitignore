@@ -19,4 +19,5 @@ docs/structurizr/exports/
 
 # MkDocs virtual environment
 .venv/
+venv_mkdocs/
 site/

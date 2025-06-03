@@ -159,7 +159,7 @@ public class GatewaySecurityConfiguration {
         RedirectServerLogoutSuccessHandler defaultRedirect = new RedirectServerLogoutSuccessHandler();
         defaultRedirect.setLogoutSuccessUrl(URI.create(georchestraLogoutUrl));
 
-        ServerHttpSecurity logoutSpec = http.formLogin(login -> login.loginPage("/login")).logout(logout -> logout
+        ServerHttpSecurity logoutSpec = http.logout(logout -> logout
                 .requiresLogout(ServerWebExchangeMatchers.pathMatchers(HttpMethod.GET, "/logout"))
                 .logoutSuccessHandler(oidcLogoutSuccessHandler != null ? oidcLogoutSuccessHandler : defaultRedirect));
 

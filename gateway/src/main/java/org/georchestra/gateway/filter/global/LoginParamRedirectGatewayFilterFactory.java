@@ -83,11 +83,7 @@ public class LoginParamRedirectGatewayFilterFactory extends AbstractGatewayFilte
 
     @Override
     public LoginParamRedirectGatewayFilter apply(Object config) {
-        RedirectToGatewayFilterFactory.Config redirectConfig = new RedirectToGatewayFilterFactory.Config();
-        redirectConfig.setStatus("302");
-        redirectConfig.setUrl("/login");
-        GatewayFilter delegate = new RedirectToGatewayFilterFactory().apply(redirectConfig);
-        return new LoginParamRedirectGatewayFilter(delegate, redirectServerAuthenticationEntryPoint);
+        return new LoginParamRedirectGatewayFilter(redirectServerAuthenticationEntryPoint);
     }
 
     public void setRedirectServerAuthenticationEntryPoint(
@@ -105,7 +101,6 @@ public class LoginParamRedirectGatewayFilterFactory extends AbstractGatewayFilte
         private static final Authentication UNAUTHENTICATED = new AnonymousAuthenticationToken("nobody", "nobody",
                 List.of(new SimpleGrantedAuthority("ROLE_ANONYMOUS")));
 
-        private final @NonNull GatewayFilter delegate;
         private final @NonNull RedirectServerAuthenticationEntryPoint redirectServerAuthenticationEntryPoint;
 
         /**

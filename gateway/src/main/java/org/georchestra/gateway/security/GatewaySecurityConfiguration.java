@@ -36,6 +36,7 @@ import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.authentication.RedirectServerAuthenticationEntryPoint;
 import org.springframework.security.web.server.authentication.logout.RedirectServerLogoutSuccessHandler;
 import org.springframework.security.web.server.authentication.logout.ServerLogoutSuccessHandler;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
@@ -126,9 +127,14 @@ public class GatewaySecurityConfiguration {
     }
 
     @Bean
+    RedirectServerAuthenticationEntryPoint authenticationEntryPoint() {
+        return new RedirectServerAuthenticationEntryPoint("/login");
+    }
+
+    @Bean
     SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
-            List<ServerHttpSecurityCustomizer> customizers, ReactiveAuthenticationManager authenticationManager)
-            throws Exception {
+            List<ServerHttpSecurityCustomizer> customizers, ReactiveAuthenticationManager authenticationManager,
+            RedirectServerAuthenticationEntryPoint redirectServerAuthenticationEntryPoint) throws Exception {
 
         log.info("Initializing security filter chain...");
 
@@ -141,7 +147,7 @@ public class GatewaySecurityConfiguration {
 
         http.formLogin(login -> login
                 .authenticationFailureHandler(new ExtendedRedirectServerAuthenticationFailureHandler("login?error"))
-                .loginPage("/login"));
+                .authenticationEntryPoint(redirectServerAuthenticationEntryPoint));
 
         sortedCustomizers(customizers).forEach(customizer -> {
             log.debug("Applying security customizer {}", customizer.getName());

@@ -40,6 +40,7 @@ import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.web.server.authentication.RedirectServerAuthenticationEntryPoint;
 import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
@@ -58,7 +59,9 @@ class LoginParamRedirectGatewayFilterFactoryTest {
 
     @BeforeEach
     void before() {
-        filter = new LoginParamRedirectGatewayFilterFactory().apply(/* unused, filter has config class */ new Object());
+        filter = new LoginParamRedirectGatewayFilterFactory() //
+                .setRedirectServerAuthenticationEntryPoint(new RedirectServerAuthenticationEntryPoint("/login"))
+                .apply(/* unused, filter has config class */ new Object());
         request = MockServerHttpRequest.get("/test/?login").build();
 
         exchange = MockServerWebExchange.from(request);

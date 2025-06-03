@@ -30,7 +30,6 @@ import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.GatewayFilterFactory;
-import org.springframework.cloud.gateway.filter.factory.RedirectToGatewayFilterFactory;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -86,9 +85,10 @@ public class LoginParamRedirectGatewayFilterFactory extends AbstractGatewayFilte
         return new LoginParamRedirectGatewayFilter(redirectServerAuthenticationEntryPoint);
     }
 
-    public void setRedirectServerAuthenticationEntryPoint(
+    public LoginParamRedirectGatewayFilterFactory setRedirectServerAuthenticationEntryPoint(
             RedirectServerAuthenticationEntryPoint redirectServerAuthenticationEntryPoint) {
         this.redirectServerAuthenticationEntryPoint = redirectServerAuthenticationEntryPoint;
+        return this;
     }
 
     /**

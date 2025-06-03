@@ -126,9 +126,11 @@ public class GatewaySecurityConfiguration {
         });
     }
 
+    static private final String LOGIN_PAGE = "/login";
+
     @Bean
     RedirectServerAuthenticationEntryPoint authenticationEntryPoint() {
-        return new RedirectServerAuthenticationEntryPoint("/login");
+        return new RedirectServerAuthenticationEntryPoint(LOGIN_PAGE);
     }
 
     @Bean
@@ -147,6 +149,8 @@ public class GatewaySecurityConfiguration {
 
         http.formLogin(login -> login
                 .authenticationFailureHandler(new ExtendedRedirectServerAuthenticationFailureHandler("login?error"))
+                .requiresAuthenticationMatcher(
+                        ServerWebExchangeMatchers.pathMatchers(HttpMethod.POST, new String[] { LOGIN_PAGE }))
                 .authenticationEntryPoint(redirectServerAuthenticationEntryPoint));
 
         sortedCustomizers(customizers).forEach(customizer -> {

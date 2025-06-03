@@ -38,6 +38,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.web.server.authentication.RedirectServerAuthenticationEntryPoint;
 
+import java.util.Optional;
+
 /**
  * Auto-configuration for geOrchestra gateway filters and predicates.
  * <p>
@@ -100,10 +102,10 @@ public class FiltersAutoConfiguration {
      */
     @Bean
     LoginParamRedirectGatewayFilterFactory loginParamRedirectGatewayFilterFactory(
-            RedirectServerAuthenticationEntryPoint redirectServerAuthenticationEntryPoint) {
+            Optional<RedirectServerAuthenticationEntryPoint> redirectServerAuthenticationEntryPoint) {
         LoginParamRedirectGatewayFilterFactory loginParamRedirectGatewayFilterFactory = new LoginParamRedirectGatewayFilterFactory();
-        loginParamRedirectGatewayFilterFactory
-                .setRedirectServerAuthenticationEntryPoint(redirectServerAuthenticationEntryPoint);
+        loginParamRedirectGatewayFilterFactory.setRedirectServerAuthenticationEntryPoint(
+                redirectServerAuthenticationEntryPoint.orElse(new RedirectServerAuthenticationEntryPoint("/login")));
         return loginParamRedirectGatewayFilterFactory;
     }
 

@@ -82,6 +82,9 @@ public class LoginParamRedirectGatewayFilterFactory extends AbstractGatewayFilte
 
     @Override
     public LoginParamRedirectGatewayFilter apply(Object config) {
+        if (redirectServerAuthenticationEntryPoint == null) {
+            throw new IllegalStateException("redirectServerAuthenticationEntryPoint must be set before using this filter");
+        }
         return new LoginParamRedirectGatewayFilter(redirectServerAuthenticationEntryPoint);
     }
 
@@ -143,9 +146,10 @@ public class LoginParamRedirectGatewayFilterFactory extends AbstractGatewayFilte
                     .flatMap(authentication -> {
                         if (authentication instanceof AnonymousAuthenticationToken) {
                             log.info("Redirecting to /login: {}", exchange.getRequest().getURI());
+                            //AuthenticationException isn't used in RedirectServerAuthenticationEntryPoint implementation,
+                            // but is required by the method signature
                             return redirectServerAuthenticationEntryPoint.commence(exchange,
-                                    new AuthenticationException("test") {
-                                    });
+                                    new AuthenticationException("Not applicable") {});
                         }
                         log.info("Already authenticated ({}), proceeding without redirection to /login",
                                 authentication.getName());

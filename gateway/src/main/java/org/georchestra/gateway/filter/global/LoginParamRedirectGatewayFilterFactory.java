@@ -30,14 +30,15 @@ import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.GatewayFilterFactory;
-import org.springframework.cloud.gateway.filter.factory.RedirectToGatewayFilterFactory;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.web.server.authentication.RedirectServerAuthenticationEntryPoint;
 import org.springframework.web.server.ServerWebExchange;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -77,14 +78,20 @@ import reactor.core.publisher.Mono;
 public class LoginParamRedirectGatewayFilterFactory extends AbstractGatewayFilterFactory<Object> {
 
     private static final Set<HttpMethod> REDIRECT_METHODS = Set.of(GET, HEAD, OPTIONS, TRACE);
+    private RedirectServerAuthenticationEntryPoint redirectServerAuthenticationEntryPoint;
 
     @Override
     public LoginParamRedirectGatewayFilter apply(Object config) {
-        RedirectToGatewayFilterFactory.Config redirectConfig = new RedirectToGatewayFilterFactory.Config();
-        redirectConfig.setStatus("302");
-        redirectConfig.setUrl("/login");
-        GatewayFilter delegate = new RedirectToGatewayFilterFactory().apply(redirectConfig);
-        return new LoginParamRedirectGatewayFilter(delegate);
+        if (redirectServerAuthenticationEntryPoint == null) {
+            throw new IllegalStateException("redirectServerAuthenticationEntryPoint must be set before using this filter");
+        }
+        return new LoginParamRedirectGatewayFilter(redirectServerAuthenticationEntryPoint);
+    }
+
+    public LoginParamRedirectGatewayFilterFactory setRedirectServerAuthenticationEntryPoint(
+            RedirectServerAuthenticationEntryPoint redirectServerAuthenticationEntryPoint) {
+        this.redirectServerAuthenticationEntryPoint = redirectServerAuthenticationEntryPoint;
+        return this;
     }
 
     /**
@@ -97,7 +104,7 @@ public class LoginParamRedirectGatewayFilterFactory extends AbstractGatewayFilte
         private static final Authentication UNAUTHENTICATED = new AnonymousAuthenticationToken("nobody", "nobody",
                 List.of(new SimpleGrantedAuthority("ROLE_ANONYMOUS")));
 
-        private final @NonNull GatewayFilter delegate;
+        private final @NonNull RedirectServerAuthenticationEntryPoint redirectServerAuthenticationEntryPoint;
 
         /**
          * Intercepts requests and redirects to {@code /login} if:
@@ -139,7 +146,10 @@ public class LoginParamRedirectGatewayFilterFactory extends AbstractGatewayFilte
                     .flatMap(authentication -> {
                         if (authentication instanceof AnonymousAuthenticationToken) {
                             log.info("Redirecting to /login: {}", exchange.getRequest().getURI());
-                            return delegate.filter(exchange, chain);
+                            //AuthenticationException isn't used in RedirectServerAuthenticationEntryPoint implementation,
+                            // but is required by the method signature
+                            return redirectServerAuthenticationEntryPoint.commence(exchange,
+                                    new AuthenticationException("Not applicable") {});
                         }
                         log.info("Already authenticated ({}), proceeding without redirection to /login",
                                 authentication.getName());

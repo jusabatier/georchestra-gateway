@@ -36,6 +36,7 @@ import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.authentication.RedirectServerAuthenticationEntryPoint;
 import org.springframework.security.web.server.authentication.logout.RedirectServerLogoutSuccessHandler;
 import org.springframework.security.web.server.authentication.logout.ServerLogoutSuccessHandler;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
@@ -125,10 +126,17 @@ public class GatewaySecurityConfiguration {
         });
     }
 
+    static private final String LOGIN_PAGE = "/login";
+
+    @Bean
+    RedirectServerAuthenticationEntryPoint authenticationEntryPoint() {
+        return new RedirectServerAuthenticationEntryPoint(LOGIN_PAGE);
+    }
+
     @Bean
     SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
-            List<ServerHttpSecurityCustomizer> customizers, ReactiveAuthenticationManager authenticationManager)
-            throws Exception {
+            List<ServerHttpSecurityCustomizer> customizers, ReactiveAuthenticationManager authenticationManager,
+            RedirectServerAuthenticationEntryPoint redirectServerAuthenticationEntryPoint) throws Exception {
 
         log.info("Initializing security filter chain...");
 
@@ -141,7 +149,9 @@ public class GatewaySecurityConfiguration {
 
         http.formLogin(login -> login
                 .authenticationFailureHandler(new ExtendedRedirectServerAuthenticationFailureHandler("login?error"))
-                .loginPage("/login"));
+                .requiresAuthenticationMatcher(
+                        ServerWebExchangeMatchers.pathMatchers(HttpMethod.POST, new String[] { LOGIN_PAGE }))
+                .authenticationEntryPoint(redirectServerAuthenticationEntryPoint));
 
         sortedCustomizers(customizers).forEach(customizer -> {
             log.debug("Applying security customizer {}", customizer.getName());
@@ -153,7 +163,7 @@ public class GatewaySecurityConfiguration {
         RedirectServerLogoutSuccessHandler defaultRedirect = new RedirectServerLogoutSuccessHandler();
         defaultRedirect.setLogoutSuccessUrl(URI.create(georchestraLogoutUrl));
 
-        ServerHttpSecurity logoutSpec = http.formLogin(login -> login.loginPage("/login")).logout(logout -> logout
+        ServerHttpSecurity logoutSpec = http.logout(logout -> logout
                 .requiresLogout(ServerWebExchangeMatchers.pathMatchers(HttpMethod.GET, "/logout"))
                 .logoutSuccessHandler(oidcLogoutSuccessHandler != null ? oidcLogoutSuccessHandler : defaultRedirect));
 

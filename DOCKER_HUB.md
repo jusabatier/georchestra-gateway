@@ -9,6 +9,7 @@
 # Featured tags
 
 - `latest`, `2.0.x`, `1.1.2`
+- `latest-debug`, `2.0.x-debug`. It enables shell inside the container for debugging purposes.
 
 # Quick reference
 

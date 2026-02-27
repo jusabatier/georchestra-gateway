@@ -71,6 +71,13 @@ public class GeorchestraGatewaySecurityConfigProperties implements Validator {
     private boolean createNonExistingUsersInLDAP = true;
 
     /**
+     * Flag indicating whether to disable the UID prefix in OIDC username mapping.
+     * When set to true, the username will not be prefixed with the provider ID.
+     * Warning : this can lead to uid collision between providers
+     */
+    private boolean disableUidPrefix = false;
+
+    /**
      * Default organization assigned to users when no specific organization is set.
      */
     private String defaultOrganization = "";

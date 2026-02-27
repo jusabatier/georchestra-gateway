@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.jsonwebtoken.Jwts;
+import org.georchestra.gateway.security.GeorchestraGatewaySecurityConfigProperties;
 import org.georchestra.security.model.GeorchestraUser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,7 @@ class OpenIdConnectUserMapperTest {
 
     OpenIdConnectUserMapper mapper;
     OpenIdConnectCustomClaimsConfigProperties nonStandardClaimsConfig;
+    GeorchestraGatewaySecurityConfigProperties securityConfigProperties;
     ExtendedOAuth2ClientProperties properties;
 
     /**
@@ -60,7 +62,8 @@ class OpenIdConnectUserMapperTest {
     @BeforeEach
     void setUp() throws Exception {
         nonStandardClaimsConfig = new OpenIdConnectCustomClaimsConfigProperties();
-        mapper = new OpenIdConnectUserMapper(nonStandardClaimsConfig);
+        securityConfigProperties = new GeorchestraGatewaySecurityConfigProperties();
+        mapper = new OpenIdConnectUserMapper(nonStandardClaimsConfig, securityConfigProperties);
     }
 
     @Test

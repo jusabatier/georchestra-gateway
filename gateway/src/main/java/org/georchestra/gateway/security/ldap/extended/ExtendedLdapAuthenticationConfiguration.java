@@ -211,7 +211,7 @@ public class ExtendedLdapAuthenticationConfiguration {
     private OrganizationsApi createOrgsApi(OrgsDaoImpl orgsDaoImpl) {
         OrganizationsApiImpl impl = new OrganizationsApiImpl();
         impl.setOrgsDao(orgsDaoImpl);
-        impl.setOrgMapper(new OrganizationMapperImpl());
+        impl.setOrgMapper(new CitiesAwareOrganizationMapper(new OrganizationMapperImpl()));
         return impl;
     }
 

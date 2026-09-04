@@ -46,6 +46,7 @@ import org.georchestra.security.api.OrganizationsApi;
 import org.georchestra.security.api.UsersApi;
 import org.georchestra.security.model.GeorchestraUser;
 import org.springframework.beans.factory.BeanInitializationException;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -81,6 +82,22 @@ public class ExtendedLdapAuthenticationConfiguration {
     @Bean
     GeorchestraLdapAuthenticatedUserMapper georchestraLdapAuthenticatedUserMapper(DemultiplexingUsersApi users) {
         return users.getTargetNames().isEmpty() ? null : new GeorchestraLdapAuthenticatedUserMapper(users);
+    }
+
+    /**
+     * Enriches OAuth2 users from existing LDAP accounts without enabling account
+     * creation.
+     */
+    @Bean
+    @ConditionalOnProperty(name = "georchestra.gateway.security.create-non-existing-users-in-l-d-a-p", havingValue = "false", matchIfMissing = true)
+    LdapOrganizationUserCustomizer ldapOrganizationUserCustomizer(DemultiplexingUsersApi users) {
+        var ldapTargets = users.getTargetNames();
+        if (ldapTargets.isEmpty()) {
+            log.info("LDAP organization customizer not registered: no extended LDAP target is configured");
+            return null;
+        }
+        log.info("Registering LDAP organization customizer with targets {}", ldapTargets);
+        return new LdapOrganizationUserCustomizer(users);
     }
 
     /**

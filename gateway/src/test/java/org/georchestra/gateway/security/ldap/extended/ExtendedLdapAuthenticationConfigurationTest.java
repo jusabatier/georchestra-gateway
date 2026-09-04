@@ -51,6 +51,8 @@ class ExtendedLdapAuthenticationConfigurationTest {
 
             assertThat(context.getBean(DemultiplexingUsersApi.class)).hasFieldOrPropertyWithValue("targetNames",
                     Set.of());
+            assertThat(context.getBean("ldapOrganizationUserCustomizer").getClass().getName())
+                    .isEqualTo("org.springframework.beans.factory.support.NullBean");
         });
     }
 
@@ -80,6 +82,27 @@ class ExtendedLdapAuthenticationConfigurationTest {
 
             assertThat(context.getBean(DemultiplexingUsersApi.class)).hasFieldOrPropertyWithValue("targetNames",
                     Set.of("ldap1"));
+            assertThat(context.getBean("ldapOrganizationUserCustomizer"))
+                    .isInstanceOf(LdapOrganizationUserCustomizer.class);
+        });
+    }
+
+    @Test
+    void ldapOrganizationEnrichmentIsDisabledWhenAccountCreationIsEnabled() {
+        runner.withPropertyValues(""//
+                , "georchestra.gateway.security.create-non-existing-users-in-l-d-a-p: true" //
+                , "georchestra.gateway.security.ldap.ldap1.enabled: true" //
+                , "georchestra.gateway.security.ldap.ldap1.extended: true" //
+                , "georchestra.gateway.security.ldap.ldap1.url: ldap://ldap1.test.com:839" //
+                , "georchestra.gateway.security.ldap.ldap1.baseDn: dc=georchestra,dc=org" //
+                , "georchestra.gateway.security.ldap.ldap1.users.rdn: ou=users,dc=georchestra,dc=org" //
+                , "georchestra.gateway.security.ldap.ldap1.users.searchFilter: (uid={0})" //
+                , "georchestra.gateway.security.ldap.ldap1.roles.rdn: ou=roles" //
+                , "georchestra.gateway.security.ldap.ldap1.roles.searchFilter: (member={0})" //
+                , "georchestra.gateway.security.ldap.ldap1.orgs.rdn: ou=orgs" //
+        ).run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context).doesNotHaveBean("ldapOrganizationUserCustomizer");
         });
     }
 
